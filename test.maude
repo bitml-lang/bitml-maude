@@ -1,0 +1,33 @@
+    
+fmod DEPOSIT-NAME is
+    protecting STRING .
+    sort DepositName .
+    sort Secret .
+    
+    op dep_ : String -> DepositName [ctor] .
+    op #_ : String -> Secret [ctor] .
+endfm
+
+view DepositName from TRIV to DEPOSIT-NAME is
+    sort Elt to DepositName .
+endv
+
+view Secret from TRIV to DEPOSIT-NAME is
+    sort Elt to Secret .
+endv
+
+
+fmod DEPOSIT-NAME-LIST is
+    protecting LIST{DepositName} .
+    protecting LIST{Secret} .
+    
+    op example_ : List{DepositName} -> Bool .
+    
+    var d : List{DepositName} .
+    eq example d = true .
+endfm
+
+reduce in DEPOSIT-NAME-LIST : occurs(dep "a", dep "a" dep "b") .
+reduce in DEPOSIT-NAME-LIST : reverse (dep "a" dep "b") .
+reduce in DEPOSIT-NAME-LIST : example (dep "a" dep "b") .
+reduce in DEPOSIT-NAME-LIST : example dep "a" .

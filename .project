@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<projectDescription>
+	<name>bitml</name>
+	<comment></comment>
+	<projects>
+	</projects>
+	<buildSpec>
+	</buildSpec>
+	<natures>
+	</natures>
+	<linkedResources>
+		<link>
+			<name>co2-maude</name>
+			<type>2</type>
+			<location>/home/nicola/repositories/co2-maude</location>
+		</link>
+	</linkedResources>
+</projectDescription>

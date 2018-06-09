@@ -1,0 +1,445 @@
+
+fmod BITML-SORTS is   
+    protecting NAT .
+    protecting STRING .
+    protecting EXT-BOOL .   *** for short-circuit operations _and-then_ _or-else_
+
+    sort Participant .      *** A B
+    sort Value .            *** v v'
+    sort Name .             *** x x' y y'
+    sort Secret .           *** s s'
+    sort Predicate .        *** p
+    sort SplitEntry .       *** v -> C
+    sort AnonDeposit .      *** <A,v>
+    sort AnonContract .     *** <C,v>
+    
+    ***
+    *** Contract
+    ***
+    sort Contract .         *** C
+    sort GuardedContract .  *** D
+    sort Tau .              *** tau
+    sort PutReveal .        *** put x^ & reveal a^
+    sort Withdraw .         *** withdraw A
+    sort Split .            *** split ( v -> C, v' -> C' ... )
+    sort AuthC .            *** A: D
+    sort After .            *** after t : D
+    subsorts Tau PutReveal Withdraw Split AuthC After < GuardedContract < Contract .
+    
+    ***
+    *** Contract Preconditions
+    ***
+    sort ContractPrecondition .        *** G
+    sort VolDeposit .                  *** A: ?v @x
+    sort PerDeposit .                  *** A: !v @x
+    sort CommSecret .                  *** A: secret a
+    subsorts VolDeposit PerDeposit CommSecret < ContractPrecondition .
+    
+    ***
+    *** Configurations
+    ***
+    sort Configuration .        *** Gamma
+    sort AdvContract .          *** {G}C
+    sort ActContract .          *** <C,v>x
+    sort Deposit .              *** <A,v>x
+    sort Auth .                 *** A[chi] 
+    sort ConfSec .              *** {A:a#N}
+    sort ConfRev .              *** A:a#N
+    sort ConfTime .             *** t
+    subsorts AdvContract ActContract Deposit Auth ConfSec ConfRev ConfTime < Configuration .
+
+    ***
+    *** Authorization
+    ***
+    sort AuthAction .           *** chi
+    sort CommitSec .            *** # |> {G}C
+    sort SpendDep .             *** x |> {G}C
+    sort TakeBranch .           *** x |> D
+    sort Join .                 *** x,y |> <A,v>
+    sort Divide .               *** x |> <A,v> <A,v'>
+    sort Donate .               *** x |> B
+    sort Destroy .              *** x^,i |> y
+    subsort CommitSec SpendDep TakeBranch Join Divide Donate Destroy < AuthAction .
+endfm
+
+***
+*** Views allow reuse maude modules like List{X} and Set{X}
+***
+view Name from TRIV to BITML-SORTS is
+    sort Elt to Name .
+endv
+
+view Secret from TRIV to BITML-SORTS is
+    sort Elt to Secret .
+endv
+
+view Configuration from TRIV to BITML-SORTS is
+    sort Elt to Configuration .
+endv
+
+view SplitEntry from TRIV to BITML-SORTS is
+    sort Elt to SplitEntry .
+endv
+
+***
+*** BitML Syntax
+***
+fmod BITML-SYNTAX is
+    protecting BITML-SORTS .
+    protecting LIST{Name} .
+    protecting LIST{Secret} .
+    protecting LIST{SplitEntry} .
+    protecting LIST{Configuration} .
+
+    op true : -> Predicate [ctor] .
+    op v(_) : Nat -> Value [ctor] .                                 *** v(0) v(1) ...
+    op x(_) : String -> Name [ctor] .                               *** x("dep1") x("dep2") ... 
+    op s(_) : String -> Secret [ctor] .                             *** s("s1") c("s2") ...
+    op _~>_ : Value Contract -> SplitEntry [ctor prec 5] .          *** v' -> C
+    op <_,_> : Participant Value -> AnonDeposit [ctor prec 5] .     *** <A,v>
+    op <_,_> : Contract Value -> AnonContract [ctor prec 5] .       *** <C,v>
+
+    ***
+    *** Contract 
+    ***
+    op 0 : -> Contract [ctor] .                                                                             *** [contr.id]
+    op tau : -> Contract [ctor] .                                                                           *** [contr.tau]
+    op put_reveal_if_._ : List{Name} List{Secret} Predicate Contract -> PutReveal [ctor prec 25] .          *** [contr.put-reveal]
+    op withdraw_ : Participant -> Withdraw [ctor prec 25] .                                                 *** [contr.withdraw]
+    op _[_] : Participant GuardedContract -> AuthC [ctor prec 25] .                                         *** [contr.authorization]
+    op after_:_ : Nat GuardedContract -> After [ctor prec 25] .                                             *** [contr.after]
+    op split(_) : List{SplitEntry} -> Split [ctor prec 25] .                                                *** [contr.split]
+    op _+_ : GuardedContract GuardedContract -> Contract [comm assoc ctor id: 0] .                          *** [contr.sum]
+
+    ***
+    *** Contract Preconditions
+    ***
+    op 0 : -> ContractPrecondition [ctor] .                                                         *** [contr-pre.id]
+    op _?_@_ : Participant Value Name -> VolDeposit [ctor prec 25] .                                *** [contr-pre.vol-deposit]
+    op _!_@_ : Participant Value Name -> PerDeposit [ctor prec 25] .                                *** [contr-pre.perm-deposit]
+    op _secret_ : Participant Secret -> CommSecret [ctor prec 25] .                                 *** [contr-pre.commit-secret]
+    op _|_ : ContractPrecondition ContractPrecondition -> ContractPrecondition [comm assoc id: 0] . *** [contr-pre.paral]
+
+    ***
+    *** Configurations
+    ***
+    op 0 : -> Configuration [ctor] .                                                    *** [conf.id]
+    op {_}_ : ContractPrecondition Contract -> AdvContract [ctor prec 35] .             *** [conf.contract-advertised]
+    op __ : AnonContract Name -> ActContract [ctor prec 15] .                           *** [conf.active-contract]
+    op __ : AnonDeposit Name -> Deposit [ctor prec 15] .                                *** [conf.deposit]
+    op _[_] : Participant AuthAction -> Auth [ctor prec 35] .                           *** [conf.authorization]
+    op {_:_#_} : Participant Secret Nat -> ConfSec [ctor prec 35] .                     *** [conf.committed-secret]
+    op _:_#_ : Participant Secret Nat -> ConfRev [ctor prec 35] .                       *** [conf.revealed-secret]
+    op time_ : Nat -> ConfTime [ctor prec 35] .                                         *** [conf.time]
+    op _|_ : Configuration Configuration -> Configuration [comm assoc ctor id: 0] .     *** [conf.parallel]
+
+    ***
+    *** Authorization
+    ***
+    op #|>_ : AdvContract -> CommitSec [ctor] .                  *** [auth.commit-secret]
+    op _|>_ : Name AdvContract -> SpendDep [ctor] .              *** [auth.spend-deposit]
+    op _|>_ : Name GuardedContract -> TakeBranch [ctor] .        *** [auth.take-branch]
+    op __|>_ : Name Name AnonDeposit -> Join [ctor] .            *** [auth.join]
+    op _|>__ : Name AnonDeposit AnonDeposit -> Divide [ctor] .   *** [auth.divide]
+    op _|>_ : Name Participant -> Donate [ctor] .                *** [auth.donate]
+    op __|>_ : List{Name} Nat Name -> Donate [ctor] .            *** [auth.destroy]
+endfm
+
+
+***
+*** Define structural equivalences
+***
+fmod BITML-STREQ is
+    protecting BITML-SYNTAX .
+    
+    var D : List{Name} .
+    var S : List{Secret} .
+    var C : Contract .
+    var p : Predicate .
+        
+    op put_._ : List{Name} Contract -> PutReveal .
+    op put_if_._ : List{Name} Predicate Contract -> PutReveal .
+    op reveal_._ : List{Secret} Contract -> PutReveal .
+    op reveal_if_._ : List{Secret} Predicate Contract -> PutReveal .
+    op put_reveal_._ : List{Name} List{Secret} Contract -> PutReveal .
+    
+    eq put D . C = put D reveal nil if true . C .
+    eq put D if p . C = put D reveal nil if p . C .
+    eq reveal S . C = put nil reveal S if true . C .
+    eq reveal S if p . C = put nil reveal S if p . C .
+    eq put D reveal S . C = put D reveal S if true . C .
+    
+    *** TODO: add more...
+endfm
+
+***
+*** Provide fresh names for deposits and contracts
+***
+*** Usage:
+***
+***    fresh : Configuration -> Name
+***    fresh : prefix:String Configuration -> Name
+***    fresh : prefix:String Nat Configuration -> Name
+***
+***    fresh : size:Nat Configuration -> List{Name}
+***    fresh : size:Nat prefix:String Configuration -> List{Name}
+***    fresh : size:Nat prefix:String startFrom:Nat Configuration -> List{Name}
+***
+fmod BITML-FREENAME is
+
+    protecting BITML-SYNTAX .
+    protecting BITML-STREQ .
+    protecting CONVERSION .
+    
+    vars d d' : AnonDeposit .
+    vars x y z : Name .
+    vars A B : Participant .
+    vars v v' : Value .
+    vars a a' : AuthAction .
+    vars S S' P P' : Configuration .
+    var s : Secret .
+    var sL : List{Secret} .
+    var n n' t : Nat .
+    var dL : List{Name} .
+    var acc : List{Name} .
+    var C C' : Contract .
+    var sel : List{SplitEntry} .
+    var GC : GuardedContract .
+    var cp cp' : ContractPrecondition .
+    var advC : AdvContract .
+    var p : Predicate .
+    var str : String .
+    var excludeList : List{Name} .
+    var tail : List{Configuration} .
+
+    *** check if a Name appears in a Configuration/AuthAction
+    op is _ free in _ : Name List{Name} -> Bool [memo] .
+    op is _ free in _ : Name ContractPrecondition -> Bool [memo] .
+    op is _ free in _ : Name Contract -> Bool [memo] .
+    op is _ free in _ : Name Configuration -> Bool [memo] .
+    op is _ free in _ : Name AuthAction -> Bool [memo] .
+    
+    *** base
+    eq is x free in dL = occurs(x, dL) .
+
+    ***
+    *** Contract 
+    ***
+    eq is x free in (0).Contract = false .                                                           *** [contr.id]
+    eq is x free in tau = false .                                                                    *** [contr.tau]
+    eq is x free in put dL reveal sL if p . C = is x free in dL or-else is x free in C .             *** [contr.put-reveal]
+    eq is x free in withdraw A = false .                                                             *** [contr.withdraw]
+    eq is x free in A[GC] = is x free in GC .                                                        *** [contr.authorization]
+    eq is x free in after t : GC = is x free in GC .                                                 *** [contr.after]
+    eq is x free in split( nil ) = false .                                                           *** [contr.split]
+    eq is x free in split( (v ~> C) sel ) = is x free in C or-else is x free in split(sel) .         *** [contr.split]
+    ceq is x free in C + C' = is x free in C or-else is x free in C' if C =/= 0 /\ C' =/= 0 .        *** [contr.sum]
+
+
+    ***
+    *** Contract Preconditions
+    ***
+    eq is x free in (0).ContractPrecondition = false .                                               *** [contr-pre.id]
+    eq is x free in A ? v @ y = x == y .                                                             *** [contr-pre.vol-deposit]
+    eq is x free in A ! v @ y = x == y .                                                             *** [contr-pre.perm-deposit]
+    eq is x free in A secret s = false .                                                             *** [contr-pre.commit-secret]
+    ceq is x free in cp | cp' = is x free in cp or-else is x free in cp' if cp =/= 0 /\ cp' =/= 0 .  *** [contr-pre.paral]
+
+
+    ***
+    *** Configurations
+    ***
+    eq is x free in (0).Configuration = false .                                                 *** [conf.id]
+    eq is x free in {cp}C = is x free in cp or-else is x free in C .                            *** [conf.contract-advertised]
+    eq is x free in < C , v > y = x == y or-else is x free in C .                               *** [conf.active-contract]
+    eq is x free in < A , v > y = x == y .                                                      *** [conf.deposit]
+    eq is x free in A[a] = is x free in a .                                                     *** [conf.authorization]
+    eq is x free in { A : s # n } = false .                                                     *** [conf.committed-secret]
+    eq is x free in A : s # n = false .                                                         *** [conf.revealed-secret]
+    eq is x free in time n = false .                                                            *** [conf.time]
+    ceq is x free in S | S' = is x free in S or-else is x free in S' if S =/= 0 /\ S' =/= 0 .   *** [conf.parallel]
+
+
+    ***
+    *** Authorization
+    ***
+    eq is x free in #|> advC = is x free in advC .                      *** [auth.commit-secret]
+    eq is x free in y |> advC = x == y or-else is x free in advC .      *** [auth.spend-deposit]
+    eq is x free in y |> GC = x == y or-else is x free in GC .          *** [auth.take-branch]
+    eq is x free in (y z |> d) = x == y or x == z .                     *** [auth.join]
+    eq is x free in (y |> d d') = x == y .                              *** [auth.divide]
+    eq is x free in (y |> B) = x == y .                                 *** [auth.donate]
+    eq is x free in (dL n |> y) = is x free in dL .                     *** [auth.destroy]
+
+
+    *** return a fresh Name given a Configuration
+
+    op fresh : Configuration -> List{Name} [memo] .
+    op fresh : String Configuration -> List{Name} [memo] .
+    op fresh : String Nat Configuration -> List{Name} [memo] .
+    op fresh : List{Name} Configuration -> List{Name} [memo] .
+    op fresh : List{Name} String Configuration -> List{Name} [memo] .
+    op fresh : List{Name} String Nat Configuration -> List{Name} [memo] .
+    op fresh : Nat Configuration -> List{Name} [memo] .
+    op fresh : Nat String Configuration -> List{Name} [memo] .
+    op fresh : Nat String Nat Configuration -> List{Name} [memo] .
+    op fresh : Nat List{Name} Configuration -> List{Name} [memo] .
+    op fresh : Nat List{Name} String Configuration -> List{Name} [memo] .
+    op fresh : Nat List{Name} String Nat Configuration -> List{Name} [memo] .
+    op fresh : Nat List{Name} String Nat Configuration List{Name} -> List{Name} [memo] .
+
+    eq fresh(S) = fresh(1,nil,"x",0,S) .
+    eq fresh(str,S) = fresh(1,nil,str,0,S) .
+    eq fresh(str,n',S) = fresh(1,nil,str,n',S) .
+    eq fresh(excludeList,S) = fresh(1,excludeList,"x",0,S) .
+    eq fresh(excludeList,str,S) = fresh(1,excludeList,str,0,S) .
+    eq fresh(excludeList,str,n',S) = fresh(1,excludeList,str,n',S) .
+    eq fresh((0).Nat, S) = fresh(1,nil,"x",0,S) .
+    eq fresh((1).Nat, S) = fresh(1,nil,"x",0,S) .
+    eq fresh(n,S) = fresh(n,nil,"x",0,S) .
+    eq fresh(n,str,S) = fresh(n,nil,str,0,S) .
+    eq fresh(n,str,n',S) = fresh(n,nil,str,n',S) .
+    eq fresh(n,excludeList,S) = fresh(n,excludeList,"x",0,S) .
+    eq fresh(n,excludeList,str,S) = fresh(n,excludeList,str,0,S) .
+    eq fresh(n,excludeList,str,n',S) = fresh(n,excludeList,str,n',S,nil) .
+    eq fresh(n,excludeList,str,n',S,acc) = if n == 0
+        then acc
+        else if  (not is x(str + "_" + string(n')) free in S) and 
+                 (not is x(str + "_" + string(n')) free in excludeList) and
+                 (not is x(str + "_" + string(n')) free in acc)
+             then fresh(n - 1,excludeList,str,n' + 1,S, acc x(str + "_" + string(n')))
+             else fresh(n,excludeList,str,n' + 1,S,acc)
+             fi 
+        fi .    
+    
+    *** convert natural to string (use CONVERSION module)
+    op string : Nat -> String .
+    eq string(n) = string(n,10) .
+endfm
+
+fmod BITML-UTILS is
+
+    protecting BITML-STREQ .
+    protecting LIST{Name} .
+    protecting LIST{Configuration} .
+    
+    var v : Value .
+    var x : Name .
+    var tail : List{SplitEntry} .
+    var tail2 : List{Name} .
+    var e : SplitEntry .
+    var C : Contract .
+    var S S' : List{Configuration} .
+    var n n' : Nat .
+    
+    ***
+    *** Take a list of split entries and names to creare a configuration of parallel contracts
+    *** es. 
+    ***     || (v ~> C v' ~> C' v'' ~> C'' ) (x x' x'') == <C,v> x | <C',v'> x' | <C'',v''> x''
+    ***
+    op ||__ : List{SplitEntry} List{Name} -> Configuration .
+    eq || (v ~> C nil) (x nil) = < C, v > x .
+    ceq || (v ~> C tail) (x tail2) = < C, v > x | ||(tail)(tail2) if size(tail) == size(tail2) .
+    
+    *** Sum for values
+    op _+_ : Value Value -> Value .
+    eq v(n) + v(n') = v (n + n') .
+    
+    ***
+    *** Return the total amount value of a list of split entries
+    ***
+    op value(_) : List{SplitEntry} -> Value .
+    eq value(nil) = v(0) .
+    eq value(v ~> C tail) = v + value(tail) .
+endfm
+
+mod BITML-SEM is
+
+    extending BITML-SYNTAX .
+    protecting BITML-STREQ .
+    protecting BITML-FREENAME .
+    protecting BITML-UTILS .
+    
+    var A B : Participant .
+    vars v v' : Value .
+    vars x y z x' y' z' : Name .
+    vars X : List{Name} .
+    vars S S' P P' : Configuration .
+    vars a a' : Secret .
+    vars n n' : Nat .
+    vars s s' : Secret .
+    vars l l' : Label .
+    var splitEntries : List{SplitEntry} .
+    
+    sorts Label .
+    sorts LConfiguration .
+    
+    subsorts Configuration < LConfiguration .
+    
+    op init : -> Label [ctor] .
+    op {_:__} : Participant Name Name -> Label [ctor] .
+    op {_:___} : Participant Name Value Value -> Label [ctor] .
+    op {_:__} : Participant Name Participant  -> Label [ctor] .
+    op join(_,_) : Name Name -> Label [ctor] .
+    op divide(_,_,_) : Name Name Name -> Label [ctor] .
+    op donate(_,_) : Name Participant -> Label [ctor] .
+    op split(_) : Name -> Label [ctor] .
+    op {_}_ : Label Configuration -> LConfiguration [frozen ctor] .
+
+    *** Allow progression of labelled configuration
+    crl [Rifl] : {l} S => S' if S => {l'} S' .
+    
+    ***rl [Dummy] : < (reveal s . 0), v > y | S => S .
+    crl [C-split] : < (split (splitEntries) ), v > y | S => { split(y) } ((|| splitEntries X) | S ) if X := fresh(size(splitEntries),y,S) /\ v == value(splitEntries) .
+
+***    rl [DEF-AUTHJOIN] :  < A , v > x | < A , v' > y | S => { A : x y } ( < A , v > x | < A , v' > y | A[ x y |> < A , v + v' > ] | S ) .
+***    crl [DEF-JOIN] :  < A , v > x | < A , v' > y | A[ x y |> < A , v + v' > ] | A[ y x |> < A , v + v' > ] | S => join(x,y) < A , v + v' > z | S if z := freshD(S) . 
+***    rl [DEF-AUTHDIVIDE] :  < A , v + v' > x | S => { A : x v v' } ( < A , v + v' > x | A[ x |> < A , v > < A , v' > ] | S ) .
+***    crl [DEF-DIVIDE] :  < A , v + v' > x | A[ x |> < A , v > < A , v' > ] | S  => divide(x,y,y') < A , v > y | < A , v' > y' | S if y := freshD(S) /\ y' := freshD(y,S) .
+***    rl [DEF-DONATE] :  < A , v > x | S => { A : x B } ( < A , v > x | A[ x |> B ] | S ) .
+***    crl [DEF-DONATE] :  < A , v > x | A[ x |> B ] | S  => donate(x,B) < B , v > y | S if y := freshD(S) .
+endm
+
+mod BITML is
+    protecting BITML-SEM .
+endm
+
+mod ODDS-EVENS is
+    protecting BITML .
+    
+    ops A B : -> Participant [ctor] .    
+    ops a b : -> Secret .
+    op t : -> Nat .
+    op p : -> Predicate .  *** 0 ≤ |b | ≤ 1
+    op p1 : -> Predicate . *** |a|  =  |b|
+    op p2 : -> Predicate . *** |a| =/= |b|
+    op OddsEvens : -> Contract .
+    op OddsEvensAdv : -> AdvContract .
+    
+    eq OddsEvens = split(
+        v(2) ~> ( reveal b if p . withdraw B + after t : withdraw A )
+        v(2) ~> ( reveal a . withdraw A + after t : withdraw B )
+        v(2) ~> ( reveal (a b) if p1 . withdraw A
+          		+ reveal (a b) if p2 . withdraw B ) ) .
+    
+    eq OddsEvensAdv = < OddsEvens, v(10) > x("x_0") .
+endm
+
+mod TEST is 
+    protecting BITML .
+    
+    ops A B : -> Participant [ctor] .    
+    ops a b : -> Secret .
+    op t : -> Nat .
+    op p : -> Predicate .  *** 0 ≤ |b | ≤ 1
+    op p1 : -> Predicate . *** |a|  =  |b|
+    op p2 : -> Predicate . *** |a| =/= |b|
+
+    op Rev : -> AdvContract .
+    op Rev1 : -> AdvContract .
+    eq Rev = < reveal a . 0 , v(10)> x("a") .
+    eq Rev1 = < reveal b' . 0 , v(5)> x("b") .
+        
+    ops D D' D'' : -> AdvContract .
+endm
+
