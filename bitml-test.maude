@@ -1,62 +1,23 @@
-
-mod ASK-ABS is
-    protecting CO2-ABS .
-    including SATISFACTION .
-    including MODEL-CHECKER .
-    including LTL-SIMPLIFIER .
-
-    subsort TUniContract < State .
-
-    subsort IOAction < Prop .
-
-    var g : RdyContract .
-    var a : IOAction .
-    var phi : Formula .
-
-    eq < {a} g > |= a = true .
-    eq < {ctx: a} g > |= a = true .
-    ***eq T:TUniContract |= a = false [owise] .
-    
-    op _ |- _ : RdyContract Formula -> Bool [frozen] .
-
-    eq g |- phi = modelCheck(< g > , phi) == true .
-endm
-
-mod BITML-TEST is 
+mod TEST is 
     protecting BITML .
-    including SATISFACTION .
-***    including MODEL-CHECKER .
-***    including LTL-SIMPLIFIER .
     
-    sort Test .
-    subsort Test < State .
-    
-    op [__] : Bool Bool -> Test [ctor] .    
-    op testOK : -> Prop .
-    
-    var T : Test .
-    vars actual expected : Bool .
-    
-	ceq [actual expected] |= testOK = true if actual == expected .
-	eq T |= testOK = false [owise] .
+    vars S S' : LConfiguration .
+    ops A B : -> Participant [ctor] .
+    ops x y z : -> Name .
+    ops a b : -> Secret .
+    op t : -> Nat .
+    op p : -> Predicate .  *** 0 ≤ |b | ≤ 1
+    op p1 : -> Predicate . *** |a|  =  |b|
+    op p2 : -> Predicate . *** |a| =/= |b|
+
+    op Rev : -> AdvContract .
+    op Rev1 : -> AdvContract .
+    eq Rev = < reveal a . 0 , v(10)> x("a") .
+    eq Rev1 = < reveal b . 0 , v(5)> x("b") .
+        
+    ops D D' D'' : -> AdvContract .
 endm
 
 set print color on .
 
-reduce in BITML-STREQ : put D . (0).Contract .
-reduce in BITML-STREQ : put D reveal S . (0).Contract .
-
-
-reduce in DEPOSIT-FREENAME : is d("x") free in nil .         *** false
-reduce in DEPOSIT-FREENAME : is d("x") free in (d("y")) .    *** false
-reduce in DEPOSIT-FREENAME : is d("x") free in (d("x")) .    *** true
-
-reduce in DEPOSIT-FREENAME : is d("x") free in (0).Configuration .  *** false
-reduce in DEPOSIT-FREENAME : is d("x") free in (0).Contract .       *** false
-reduce in DEPOSIT-FREENAME : is d("x") free in < A , v > d("x") .   *** true
-reduce in DEPOSIT-FREENAME : is d("x") free in < C , v > c("x") .   *** false
-reduce in DEPOSIT-FREENAME : is d("x") free in put (d("x") d("y")) . (0).Contract .   *** false
-
-
-search [1] in DEPOSIT-FREENAME : is d("x") free in nil =>* false .         *** false
-search [1] in DEPOSIT-FREENAME : is d("x") free in nil =>* true .         *** false
+search in TEST : [y] < split(v(1) ~> 0 v(2) ~> 0 v(3) ~> 0), v(6) > y =>* {split(y)}[x("x_0") x("x_1") x("x_2")]< (0).Contract,v(1) > x("x_0") | < (0).Contract,v(2) > x("x_1") | < (0).Contract,v(3) > x("x_2") .
