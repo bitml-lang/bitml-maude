@@ -81,6 +81,14 @@ view SplitEntry from TRIV to BITML-SORTS is
     sort Elt to SplitEntry .
 endv
 
+view Value from TRIV to BITML-SORTS is
+    sort Elt to Value .
+endv
+
+view Participant from TRIV to BITML-SORTS is
+    sort Elt to Participant .
+endv
+
 ***
 *** BitML Syntax
 ***
@@ -90,6 +98,10 @@ fmod BITML-SYNTAX is
     protecting LIST{Secret} .
     protecting LIST{SplitEntry} .
     protecting LIST{Configuration} .
+    protecting LIST{Participant} .
+    protecting LIST{Nat} .
+    protecting LIST{Value} .
+    
 
     op true : -> Predicate [ctor] .
     op v(_) : Nat -> Value [ctor] .                                 *** v(0) v(1) ...
@@ -269,19 +281,20 @@ fmod BITML-FREENAME is
 
     *** return a fresh Name given a Configuration
 
-    op fresh : List{Name} -> List{Name} [memo] .
-    op fresh : List{Name} Nat -> List{Name} [memo] .    
-    op fresh : Nat List{Name} String Nat Configuration List{Name} -> List{Name} [memo] .
+    op fresh(_) : List{Name} -> List{Name} [memo] .
+    op fresh(_,_) : List{Name} Nat -> List{Name} [memo] .    
+    op fresh(_,_,_,_,_) : List{Name} Nat Nat Configuration List{Name} -> List{Name} [memo] .
 
-    eq fresh(excludeList) = fresh(1,excludeList,"x",0,0,nil) .
-    eq fresh(excludeList,n) = fresh(n,excludeList,"x",0,0,nil) .
+    eq fresh(excludeList) = fresh(excludeList,1,0,0,nil) .
+    eq fresh(excludeList,n) = fresh(excludeList,n,0,0,nil) .
     *** generic implementation
-    eq fresh(n,excludeList,str,n',S,acc) = if n == 0
+    eq fresh(excludeList,n,n',S,acc) = 
+        if n <= 0
         then acc
-        else if  (not is x(str + "_" + string(n')) free in S) and 
-                 (not is x(str + "_" + string(n')) free in excludeList)
-             then fresh(n - 1,excludeList,str,n' + 1,S, acc x(str + "_" + string(n')))
-             else fresh(n,excludeList,str,n' + 1,S,acc)
+        else if  ((not is x("x_" + string(n')) free in S) and 
+                 (not is x("x_" + string(n')) free in excludeList))
+             then fresh(excludeList,(n - 1),n' + 1,S, acc x("x_" + string(n')))
+             else fresh(excludeList,n,(n' + 1),S,acc)
              fi 
         fi .    
     
@@ -293,8 +306,6 @@ endfm
 fmod BITML-UTILS is
 
     protecting BITML-STREQ .
-    protecting LIST{Name} .
-    protecting LIST{Configuration} .
     
     var v : Value .
     var x : Name .
@@ -303,7 +314,14 @@ fmod BITML-UTILS is
     var e : SplitEntry .
     var C : Contract .
     var S S' : List{Configuration} .
-    var n n' : Nat .
+    var n n' N : Nat .
+    var a : Secret .
+    vars x^ y^ : List{Name} .
+    vars a^ : List{Secret} .
+    vars v^ : List{Value} .
+    vars A B : Participant .
+    vars A^ B^ : List{Participant} .
+    vars N^ : List{Nat} .
     
     ***
     *** Take a list of split entries and names to creare a configuration of parallel contracts
@@ -324,6 +342,24 @@ fmod BITML-UTILS is
     op value(_) : List{SplitEntry} -> Value .
     eq value(nil) = v(0) .
     eq value(v ~> C tail) = v + value(tail) .
+
+    ***
+    ***
+    op ||___ : List{Participant} List{Value} List{Name} -> Configuration .
+    eq || (nil).List{Participant} (nil).List{Value} (nil).List{Name} = 0 .
+    ceq || (A A^) (v v^) (x x^) = < A, v > x | || A^ v^ x^ if size(A^) == size(v^) /\ size(v^) == size(x^) .
+    
+    ***
+    ***
+    op ||___ : List{Participant} List{Secret} List{Nat} -> Configuration .
+    eq || (nil).List{Participant} (nil).List{Secret} (nil).List{Nat} = 0 .
+    ceq || (A A^) (a a^) (N N^) = A : a # N | || A^ a^ N^ if size(A^) == size(a^) /\ size(a^) == size(N^) .
+
+    ***
+    ***
+    op listOccurs(_,_) : List{Name} List{Name} -> Bool .
+    eq listOccurs(nil,y^) = true .
+    eq listOccurs((x x^),y^) = occurs(x,y^) and-then listOccurs(x^,y^) . 
 endfm
 
 mod BITML-SEM is
@@ -333,17 +369,25 @@ mod BITML-SEM is
     protecting BITML-FREENAME .
     protecting BITML-UTILS .
     
-    var A B : Participant .
-    vars v v' : Value .
-    vars x y z x' y' z' : Name .
-    vars X : List{Name} .
-    vars S S' P P' : Configuration .
+    var A B A' B' A'' B'' : Participant .
+    var C : Contract .
+    vars v v' v'' v''' : Value .
+    vars x y z x' y' z' x'' y'' z'' : Name .
+    vars x^ y^ : List{Name} .
+    vars a^ : List{Secret} .
+    vars v^ : List{Value} .
+    vars A^ B^ : List{Participant} .
+    var N : Nat .
+    vars N^ : List{Nat} .
+    vars S S' S'' P P' : Configuration .
     vars a a' : Secret .
     vars n n' : Nat .
     vars s s' : Secret .
+    vars s^ : List{Secret} .
     vars l l' : Label .
     vars fv fv' : List{Name} .
     var splitEntries : List{SplitEntry} .
+    vars p p' : Predicate .
     
     sorts Label .
     sorts LConfiguration .
@@ -358,13 +402,25 @@ mod BITML-SEM is
     op divide(_,_,_) : Name Name Name -> Label [ctor] .
     op donate(_,_) : Name Participant -> Label [ctor] .
     op split(_) : Name -> Label [ctor] .
+    op put(_,_,_) : List{Name} List{Secret} Name -> Label [ctor] .
     op [_]_ : List{Name} Configuration -> LConfiguration [frozen ctor] .
     op {_}[_]_ : Label List{Name} Configuration -> LConfiguration [frozen ctor] .
 
     *** Allow progression of labelled configuration
     crl [Rifl] : {l} [fv] S => [fv'] S' if [fv] S => {l'} [fv'] S' .
     
-    crl [C-split] : [fv] (< (split (splitEntries) ), v > y | S) => { split(y) } [fv'] ((|| splitEntries fv') | S ) if fv' := fresh(fv,size(splitEntries)) /\ occurs(y,fv) /\  v == value(splitEntries) .
+    crl [C-Split] : [fv] (< (split (splitEntries) ), v > y | S) => { split(y) } [fv fv'] ((|| splitEntries fv') | S ) 
+                    if fv' := fresh(fv,size(splitEntries)) /\ occurs(y,fv) /\  v == value(splitEntries) .
+
+    *** prova
+    crl [C-Put] : [fv] (< (put x x' x'' reveal a if p . C), v > y | (< A, v''' > x) | (< A', v' > x') | (< A'', v'' > x'') | S) => 
+                    { put(x x' x'',nil,y) } [fv z] ( < C, (v + (v' + (v'' + v'')))  > z | S )
+                    if z := fresh(fv) . ***/\ occurs(y,fv) /\ listOccurs(x^,fv) /\  p == true .
+
+    *** bo, espande i ||
+    crl [C-PutReveal] : [fv] (< (put x^ reveal a^ if p . C), v > y | (|| A^ v^ x^) | (|| B^ a^ N^) | S) => 
+                    { put(x^,a^,y) } [fv z] ( < C, v + v^  > z | (|| B^ a^ N^) | S )
+                    if z := fresh(fv) . ***/\ occurs(y,fv) /\ listOccurs(x^,fv) /\  p == true .
 
 ***    rl [DEF-AUTHJOIN] :  < A , v > x | < A , v' > y | S => { A : x y } ( < A , v > x | < A , v' > y | A[ x y |> < A , v + v' > ] | S ) .
 ***    crl [DEF-JOIN] :  < A , v > x | < A , v' > y | A[ x y |> < A , v + v' > ] | A[ y x |> < A , v + v' > ] | S => join(x,y) < A , v + v' > z | S if z := freshD(S) . 
@@ -389,6 +445,8 @@ mod ODDS-EVENS is
     op p2 : -> Predicate . *** |a| =/= |b|
     op OddsEvens : -> Contract .
     op OddsEvensAdv : -> AdvContract .
+    op a : -> Secret .
+    ops x x' x'' y : -> Name .
     
     eq OddsEvens = split(
         v(2) ~> ( reveal b if p . withdraw B + after t : withdraw A )
@@ -397,6 +455,23 @@ mod ODDS-EVENS is
                 + reveal (a b) if p2 . withdraw B ) ) .
     
     eq OddsEvensAdv = [x("x_0")] < OddsEvens, v(6) > x("x_0") .
+    
+    op ESsplit : -> AdvContract .
+    eq ESsplit = [x("x_0")] < split( v(1) ~> 0 v(2) ~> 0 ), v(3) > x("x_0") .
+
+    op ESreveal : -> AdvContract .
+    eq ESreveal = [x("x_0") x("x_1")] < reveal a . 0, v(3) > x("x_0") | B : a # 6 .
+
+    var txs : List{Name} .
+    var vs : List{Value} .
+    var As : List{Participant} .
+    op ESputReveal(_,_,_) : List{Name} List{Value} List{Participant} -> AdvContract .
+    eq ESputReveal(txs,vs,As) = 
+        [txs y] 
+        < put txs reveal a if true . 0, v(3) > y 
+        |   (|| As vs txs)
+        |   (|| B a 10) .
+
 endm
 
 
