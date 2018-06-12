@@ -104,57 +104,57 @@ fmod BITML-SYNTAX is
     
 
     op true : -> Predicate [ctor] .
-    op v(_) : Nat -> Value [ctor] .                                 *** v(0) v(1) ...
-    op x(_) : String -> Name [ctor] .                               *** x("dep1") x("dep2") ... 
-    op s(_) : String -> Secret [ctor] .                             *** s("s1") c("s2") ...
-    op _~>_ : Value Contract -> SplitEntry [ctor prec 5] .          *** v' -> C
-    op <_,_> : Participant Value -> AnonDeposit [ctor prec 5] .     *** <A,v>
-    op <_,_> : Contract Value -> AnonContract [ctor prec 5] .       *** <C,v>
+    op v(_) : Nat -> Value [ctor] .                                        *** v(0) v(1) ...
+    op x(_) : String -> Name [ctor] .                                      *** x("dep1") x("dep2") ...
+    op s(_) : String -> Secret [ctor] .                                    *** s("s1") c("s2") ...
+    op _~>_ : Value Contract -> SplitEntry [ctor prec 5 frozen] .          *** v' -> C
+    op <_,_> : Participant Value -> AnonDeposit [ctor prec 5 frozen] .     *** <A,v>
+    op <_,_> : Contract Value -> AnonContract [ctor prec 5 frozen] .       *** <C,v>
 
     ***
     *** Contract 
     ***
     op 0 : -> Contract [ctor] .                                                                             *** [contr.id]
     op tau : -> Contract [ctor] .                                                                           *** [contr.tau]
-    op put_reveal_if_._ : List{Name} List{Secret} Predicate Contract -> PutReveal [ctor prec 25] .          *** [contr.put-reveal]
-    op withdraw_ : Participant -> Withdraw [ctor prec 25] .                                                 *** [contr.withdraw]
-    op _[_] : Participant GuardedContract -> AuthC [ctor prec 25] .                                         *** [contr.authorization]
-    op after_:_ : Nat GuardedContract -> After [ctor prec 25] .                                             *** [contr.after]
-    op split(_) : List{SplitEntry} -> Split [ctor prec 25] .                                                *** [contr.split]
-    op _+_ : GuardedContract GuardedContract -> Contract [comm assoc ctor id: 0] .                          *** [contr.sum]
+    op put_reveal_if_._ : List{Name} List{Secret} Predicate Contract -> PutReveal [ctor prec 25 frozen] .   *** [contr.put-reveal]
+    op withdraw_ : Participant -> Withdraw [ctor prec 25 frozen] .                                          *** [contr.withdraw]
+    op _[_] : Participant GuardedContract -> AuthC [ctor prec 25 frozen] .                                  *** [contr.authorization]
+    op after_:_ : Nat GuardedContract -> After [ctor prec 25 frozen] .                                      *** [contr.after]
+    op split(_) : List{SplitEntry} -> Split [ctor prec 25 frozen] .                                         *** [contr.split]
+    op _+_ : GuardedContract GuardedContract -> Contract [comm assoc ctor id: 0 frozen] .                   *** [contr.sum]
 
     ***
     *** Contract Preconditions
     ***
-    op 0 : -> ContractPrecondition [ctor] .                                                         *** [contr-pre.id]
-    op _?_@_ : Participant Value Name -> VolDeposit [ctor prec 25] .                                *** [contr-pre.vol-deposit]
-    op _!_@_ : Participant Value Name -> PerDeposit [ctor prec 25] .                                *** [contr-pre.perm-deposit]
-    op _secret_ : Participant Secret -> CommSecret [ctor prec 25] .                                 *** [contr-pre.commit-secret]
-    op _|_ : ContractPrecondition ContractPrecondition -> ContractPrecondition [comm assoc id: 0] . *** [contr-pre.paral]
+    op 0 : -> ContractPrecondition [ctor] .                                                                *** [contr-pre.id]
+    op _?_@_ : Participant Value Name -> VolDeposit [ctor prec 25 frozen] .                                *** [contr-pre.vol-deposit]
+    op _!_@_ : Participant Value Name -> PerDeposit [ctor prec 25 frozen] .                                *** [contr-pre.perm-deposit]
+    op _secret_ : Participant Secret -> CommSecret [ctor prec 25 frozen] .                                 *** [contr-pre.commit-secret]
+    op _|_ : ContractPrecondition ContractPrecondition -> ContractPrecondition [comm assoc id: 0 frozen] . *** [contr-pre.paral]
 
     ***
     *** Configurations
     ***
-    op 0 : -> Configuration [ctor] .                                                    *** [conf.id]
-    op {_}_ : ContractPrecondition Contract -> AdvContract [ctor prec 35] .             *** [conf.contract-advertised]
-    op __ : AnonContract Name -> ActContract [ctor prec 15] .                           *** [conf.active-contract]
-    op __ : AnonDeposit Name -> Deposit [ctor prec 15] .                                *** [conf.deposit]
-    op _[_] : Participant AuthAction -> Auth [ctor prec 35] .                           *** [conf.authorization]
-    op {_:_#_} : Participant Secret Nat -> ConfSec [ctor prec 35] .                     *** [conf.committed-secret]
-    op _:_#_ : Participant Secret Nat -> ConfRev [ctor prec 35] .                       *** [conf.revealed-secret]
-    op time_ : Nat -> ConfTime [ctor prec 35] .                                         *** [conf.time]
-    op _|_ : Configuration Configuration -> Configuration [comm assoc ctor id: 0] .     *** [conf.parallel]
+    op 0 : -> Configuration [ctor] .                                                           *** [conf.id]
+    op {_}_ : ContractPrecondition Contract -> AdvContract [ctor prec 35 frozen] .             *** [conf.contract-advertised]
+    op __ : AnonContract Name -> ActContract [ctor prec 15 frozen] .                           *** [conf.active-contract]
+    op __ : AnonDeposit Name -> Deposit [ctor prec 15 frozen] .                                *** [conf.deposit]
+    op _[_] : Participant AuthAction -> Auth [ctor prec 35 frozen] .                           *** [conf.authorization]
+    op {_:_#_} : Participant Secret Nat -> ConfSec [ctor prec 35 frozen] .                     *** [conf.committed-secret]
+    op _:_#_ : Participant Secret Nat -> ConfRev [ctor prec 35 frozen] .                       *** [conf.revealed-secret]
+    op time_ : Nat -> ConfTime [ctor prec 35 frozen] .                                         *** [conf.time]
+    op _|_ : Configuration Configuration -> Configuration [comm assoc ctor id: 0 frozen] .     *** [conf.parallel]
 
     ***
     *** Authorization
     ***
-    op #|>_ : AdvContract -> CommitSec [ctor] .                  *** [auth.commit-secret]
-    op _|>_ : Name AdvContract -> SpendDep [ctor] .              *** [auth.spend-deposit]
-    op _|>_ : Name GuardedContract -> TakeBranch [ctor] .        *** [auth.take-branch]
-    op __|>_ : Name Name AnonDeposit -> Join [ctor] .            *** [auth.join]
-    op _|>__ : Name AnonDeposit AnonDeposit -> Divide [ctor] .   *** [auth.divide]
-    op _|>_ : Name Participant -> Donate [ctor] .                *** [auth.donate]
-    op __|>_ : List{Name} Nat Name -> Donate [ctor] .            *** [auth.destroy]
+    op #|>_ : AdvContract -> CommitSec [ctor frozen] .                  *** [auth.commit-secret]
+    op _|>_ : Name AdvContract -> SpendDep [ctor frozen] .              *** [auth.spend-deposit]
+    op _|>_ : Name GuardedContract -> TakeBranch [ctor frozen] .        *** [auth.take-branch]
+    op __|>_ : Name Name AnonDeposit -> Join [ctor frozen] .            *** [auth.join]
+    op _|>__ : Name AnonDeposit AnonDeposit -> Divide [ctor frozen] .   *** [auth.divide]
+    op _|>_ : Name Participant -> Donate [ctor frozen] .                *** [auth.donate]
+    op __|>_ : List{Name} Nat Name -> Donate [ctor frozen] .            *** [auth.destroy]
 endfm
 
 
@@ -395,16 +395,16 @@ mod BITML-SEM is
     subsorts Configuration < LConfiguration .
     
     op init : -> Label [ctor] .
-    op {_:__} : Participant Name Name -> Label [ctor] .
-    op {_:___} : Participant Name Value Value -> Label [ctor] .
-    op {_:__} : Participant Name Participant  -> Label [ctor] .
-    op join(_,_) : Name Name -> Label [ctor] .
-    op divide(_,_,_) : Name Name Name -> Label [ctor] .
-    op donate(_,_) : Name Participant -> Label [ctor] .
-    op split(_) : Name -> Label [ctor] .
-    op put(_,_,_) : List{Name} List{Secret} Name -> Label [ctor] .
-    op [_]_ : List{Name} Configuration -> LConfiguration [frozen ctor] .
-    op {_}[_]_ : Label List{Name} Configuration -> LConfiguration [frozen ctor] .
+    op {_:__} : Participant Name Name -> Label [ctor frozen] .
+    op {_:___} : Participant Name Value Value -> Label [ctor frozen] .
+    op {_:__} : Participant Name Participant  -> Label [ctor frozen] .
+    op join(_,_) : Name Name -> Label [ctor frozen] .
+    op divide(_,_,_) : Name Name Name -> Label [ctor frozen] .
+    op donate(_,_) : Name Participant -> Label [ctor frozen] .
+    op split(_) : Name -> Label [ctor frozen] .
+    op put(_,_,_) : List{Name} List{Secret} Name -> Label [ctor frozen] .
+    op [_]_ : List{Name} Configuration -> LConfiguration [ctor frozen] .
+    op {_}[_]_ : Label List{Name} Configuration -> LConfiguration [ctor frozen] .
 
     *** Allow progression of labelled configuration
     crl [Rifl] : {l} [fv] S => [fv'] S' if [fv] S => {l'} [fv'] S' .
@@ -413,11 +413,11 @@ mod BITML-SEM is
                     if fv' := fresh(fv,size(splitEntries)) /\ occurs(y,fv) /\  v == value(splitEntries) .
 
     *** prova
-    crl [C-Put] : [fv] (< (put x x' x'' reveal a if p . C), v > y | (< A, v''' > x) | (< A', v' > x') | (< A'', v'' > x'') | S) => 
-                    { put(x x' x'',nil,y) } [fv z] ( < C, (v + (v' + (v'' + v'')))  > z | S )
-                    if z := fresh(fv) . ***/\ occurs(y,fv) /\ listOccurs(x^,fv) /\  p == true .
+***    crl [C-Put] : [fv] (< (put x x' x'' reveal a if p . C), v > y | (< A, v''' > x) | (< A', v' > x') | (< A'', v'' > x'') | S) =>
+***                    { put(x x' x'',nil,y) } [fv z] ( < C, (v + (v' + (v'' + v'')))  > z | S )
+***                    if z := fresh(fv) . ***/\ occurs(y,fv) /\ listOccurs(x^,fv) /\  p == true .
 
-    *** bo, espande i ||
+    *** bo, non espande || per il matching
     crl [C-PutReveal] : [fv] (< (put x^ reveal a^ if p . C), v > y | (|| A^ v^ x^) | (|| B^ a^ N^) | S) => 
                     { put(x^,a^,y) } [fv z] ( < C, v + v^  > z | (|| B^ a^ N^) | S )
                     if z := fresh(fv) . ***/\ occurs(y,fv) /\ listOccurs(x^,fv) /\  p == true .
@@ -446,6 +446,7 @@ mod ODDS-EVENS is
     op OddsEvens : -> Contract .
     op OddsEvensAdv : -> AdvContract .
     op a : -> Secret .
+    ops v v' v'' : -> Value .
     ops x x' x'' y : -> Name .
     
     eq OddsEvens = split(
@@ -474,4 +475,4 @@ mod ODDS-EVENS is
 
 endm
 
-
+rewrite in ODDS-EVENS : ESputReveal(x x' x'', v v' v'', A A A) .
