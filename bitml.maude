@@ -442,6 +442,7 @@ mod BITML-SEM is
     op _:___ : Participant Name Value Value -> Label [ctor frozen] .
     op _:__ : Participant Name Participant  -> Label [ctor frozen] .
     op _:_ : Participant Secret  -> Label [ctor frozen] .
+    op withdraw(_,_,_) : Participant Value Name -> Label [ctor frozen] .
     op join(_,_) : Name Name -> Label [ctor frozen] .
     op divide(_,_,_) : Name Name Name -> Label [ctor frozen] .
     op donate(_,_) : Name Participant -> Label [ctor frozen] .
@@ -464,7 +465,11 @@ mod BITML-SEM is
                         Some S''' := (secrets a^ S) /\
                         p == true .
 
-    rl [C-AuthRev] : [fv] {A : a # N} | S => { A : a } [fv] A : a # N | S . 
+    rl [C-AuthRev] : [fv] {A : a # N} | S => { A : a } [fv] A : a # N | S .
+    
+    crl [C-Withdraw] : [fv] < withdraw A, v > y | S => { withdraw(A,v,y) } [fv z] < A, v > z | S 
+                    if z := fresh(fv).
+    
 ***    rl [DEF-AUTHJOIN] :  < A , v > x | < A , v' > y | S => { A : x y } ( < A , v > x | < A , v' > y | A[ x y |> < A , v + v' > ] | S ) .
 ***    crl [DEF-JOIN] :  < A , v > x | < A , v' > y | A[ x y |> < A , v + v' > ] | A[ y x |> < A , v + v' > ] | S => join(x,y) < A , v + v' > z | S if z := freshD(S) . 
 ***    rl [DEF-AUTHDIVIDE] :  < A , v + v' > x | S => { A : x v v' } ( < A , v + v' > x | A[ x |> < A , v > < A , v' > ] | S ) .
