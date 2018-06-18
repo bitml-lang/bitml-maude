@@ -419,11 +419,10 @@ mod BITML-SEM is
     vars a^ : List{Secret} .
     vars v^ : List{Value} .
     vars A^ B^ : List{Participant} .
-    var N : Nat .
-    vars N^ : List{Nat} .
+    vars n^ N^ : List{Nat} .
     vars S S' S'' S''' P P' : Configuration .
     vars a a' : Secret .
-    vars n n' : Nat .
+    vars n n' N : Nat .
     vars s s' : Secret .
     vars s^ : List{Secret} .
     vars l l' : Label .
@@ -437,28 +436,26 @@ mod BITML-SEM is
     
     subsorts Configuration < LConfiguration .
     
+    *** Labels
     op init : -> Label [ctor] .
-    op {_:__} : Participant Name Name -> Label [ctor frozen] .
-    op {_:___} : Participant Name Value Value -> Label [ctor frozen] .
-    op {_:__} : Participant Name Participant  -> Label [ctor frozen] .
+    op _:__ : Participant Name Name -> Label [ctor frozen] .
+    op _:___ : Participant Name Value Value -> Label [ctor frozen] .
+    op _:__ : Participant Name Participant  -> Label [ctor frozen] .
+    op _:_ : Participant Secret  -> Label [ctor frozen] .
     op join(_,_) : Name Name -> Label [ctor frozen] .
     op divide(_,_,_) : Name Name Name -> Label [ctor frozen] .
     op donate(_,_) : Name Participant -> Label [ctor frozen] .
     op split(_) : Name -> Label [ctor frozen] .
     op put(_,_,_) : List{Name} List{Secret} Name -> Label [ctor frozen] .
+    
     op [_]_ : List{Name} Configuration -> LConfiguration [ctor] .
     op {_}[_]_ : Label List{Name} Configuration -> LConfiguration [ctor frozen] .
 
     *** Allow progression of labelled configuration
     crl [Rifl] : {l} [fv] S => [fv'] S' if [fv] S => {l'} [fv'] S' .
     
-    crl [C-Split] : [fv] (< (split (splitEntries) ), v > y | S) => { split(y) } [fv fv'] ((|| splitEntries fv') | S ) 
+    crl [C-Split] : [fv] < (split (splitEntries) ), v > y | S => { split(y) } [fv fv'] ((|| splitEntries fv') | S ) 
                     if fv' := fresh(fv,size(splitEntries)) .
-
-    *** prova
-***    crl [C-Put] : [fv] (< (put x x' x'' reveal a if p . C), v > y | (< A, v''' > x) | (< A', v' > x') | (< A'', v'' > x'') | S) =>
-***                    { put(x x' x'',nil,y) } [fv z] ( < C, (v + (v' + (v'' + v'')))  > z | S )
-***                    if z := fresh(fv) . ***/\ occurs(y,fv) /\ listOccurs(x^,fv) /\  p == true .
 
     crl [C-PutReveal] : [fv] (< (put (x^) reveal a^ if p . C), v > y | S) => 
                     { put(x^,a^,y) } [fv z] ( < C, v > z | S'')
@@ -467,6 +464,7 @@ mod BITML-SEM is
                         Some S''' := (secrets a^ S) /\
                         p == true .
 
+    rl [C-AuthRev] : [fv] {A : a # N} | S => { A : a } [fv] A : a # N | S . 
 ***    rl [DEF-AUTHJOIN] :  < A , v > x | < A , v' > y | S => { A : x y } ( < A , v > x | < A , v' > y | A[ x y |> < A , v + v' > ] | S ) .
 ***    crl [DEF-JOIN] :  < A , v > x | < A , v' > y | A[ x y |> < A , v + v' > ] | A[ y x |> < A , v + v' > ] | S => join(x,y) < A , v + v' > z | S if z := freshD(S) . 
 ***    rl [DEF-AUTHDIVIDE] :  < A , v + v' > x | S => { A : x v v' } ( < A , v + v' > x | A[ x |> < A , v > < A , v' > ] | S ) .
@@ -531,7 +529,7 @@ mod TEST is
     ops v v' v'' : -> Value .
     ops a a' a'' : -> Secret .
     ops b b' b'' : -> Secret .
-    ops x^ y^ z^ : -> List{name} . 
+    ops x^ y^ z^ : -> List{Name} . 
     ops v^ : -> List{Value} . 
     ops a^ b^ : -> List{Secret} . 
     ops t t' : -> Nat .
@@ -543,21 +541,21 @@ endm
 ***set trace on .
 ***trace exclude BOOL EXT-BOOL STRING NAT LIST{Name} LIST{Secret} LIST{SplitEntry} FULL-MAUDE .
 ***set trace eq off .
-rewrite in TEST : 
-    [x x' x'' y]
-        < put x x' x'' reveal a a'' if true . C, v(10) > y 
-        | < A, v > x | < B, v' > x' | < A', v'' > x''
-        | B : a # 10 | B' : a'' # 4 .
+***rewrite in TEST : 
+***    [x x' x'' y]
+***        < put x x' x'' reveal a a'' if true . C, v(10) > y 
+***        | < A, v > x | < B, v' > x' | < A', v'' > x''
+***        | B : a # 10 | B' : a'' # 4 .
 
-search in TEST : 
-    [x x' x'' y]
-        < put x x' x'' reveal a a'' if true . C, v(10) > y 
-        | < A, v > x | < B, v' > x' | < A', v'' > x''
-        | B : a # 10 | B' : a'' # 4 
-    =>*
-    {put(x x' x'',a a'',y)}[x x' x'' y x("x_0")]< C,v(10) >
-    x("x_0") | B : a # 10 | B' : a'' # 4
-    .
+***search in TEST : 
+***    [x x' x'' y]
+***        < put x x' x'' reveal a a'' if true . C, v(10) > y 
+***        | < A, v > x | < B, v' > x' | < A', v'' > x''
+***        | B : a # 10 | B' : a'' # 4 
+***    =>*
+***    {put(x x' x'',a a'',y)}[x x' x'' y x("x_0")]< C,v(10) >
+***    x("x_0") | B : a # 10 | B' : a'' # 4
+***    .
 
     
     
