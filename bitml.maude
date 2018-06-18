@@ -313,7 +313,7 @@ fmod BITML-UTILS is
     var tail2 : List{Name} .
     var e : SplitEntry .
     var C : Contract .
-    var S S' : List{Configuration} .
+    var S S' : Configuration .
     var n n' N : Nat .
     var a : Secret .
     vars x^ y^ : List{Name} .
@@ -322,6 +322,7 @@ fmod BITML-UTILS is
     vars A B : Participant .
     vars A^ B^ : List{Participant} .
     vars N^ : List{Nat} .
+    var accConf : Configuration .    
     
     ***
     *** Take a list of split entries and names to creare a configuration of parallel contracts
@@ -360,6 +361,47 @@ fmod BITML-UTILS is
     op listOccurs(_,_) : List{Name} List{Name} -> Bool .
     eq listOccurs(nil,y^) = true .
     eq listOccurs((x x^),y^) = occurs(x,y^) and-then listOccurs(x^,y^) . 
+    
+    ***
+    *** Option
+    ***     None
+    ***     Some(Any)
+    ***
+    sort Option None Some .
+    subsorts None Some < Option .
+    op None : -> None [ctor].
+    op Some_ : Universal -> Some [ctor poly(1)].
+
+    ***
+    *** Convert Some(Configuration) to Configuration
+    ***
+    op toConf_ : Some -> Configuration .
+    eq toConf Some S = S .    
+    
+    ***
+    *** Given a list of names and S, split the deposits from S.
+    *** Return a Some(D R) with D == all deposits in S and R == S \ D,
+    *** or None if some deposit is not found.
+    ***
+    op deposits__ : List{Name} Configuration -> Option .
+    eq deposits x^ S = depositsTR x^ S 0 .
+    op depositsTR___ : List{Name} Configuration Configuration -> Option .
+    eq depositsTR nil S accConf = Some (accConf S) .    *** base case
+    eq depositsTR (x x^) ((< A , v > x) | S) accConf = depositsTR x^ S (accConf | < A , v > x) .
+    eq depositsTR x^ S accConf = None [owise].
+
+    ***
+    *** Given a list of secrets and S, fetch all the secrets in S.
+    *** Return a Some(S') with S' == all secrets in S,
+    *** or None if some secret is not found.
+    ***
+    op secrets__ : List{Secret} Configuration -> Option .
+    eq secrets a^ S = secretsTR a^ S 0 .
+    op secretsTR___ : List{Secret} Configuration Configuration -> Option .
+    eq secretsTR nil S accConf = Some accConf .    *** base case
+    eq secretsTR (a a^) ((A : a # N) | S) accConf = secretsTR a^ S (accConf | A : a # N) .
+    eq secretsTR a^ S accConf = None [owise].
+
 endfm
 
 mod BITML-SEM is
@@ -379,7 +421,7 @@ mod BITML-SEM is
     vars A^ B^ : List{Participant} .
     var N : Nat .
     vars N^ : List{Nat} .
-    vars S S' S'' P P' : Configuration .
+    vars S S' S'' S''' P P' : Configuration .
     vars a a' : Secret .
     vars n n' : Nat .
     vars s s' : Secret .
@@ -388,6 +430,7 @@ mod BITML-SEM is
     vars fv fv' : List{Name} .
     var splitEntries : List{SplitEntry} .
     vars p p' : Predicate .
+    vars putDeps putSecs : Option .
     
     sorts Label .
     sorts LConfiguration .
@@ -403,24 +446,26 @@ mod BITML-SEM is
     op donate(_,_) : Name Participant -> Label [ctor frozen] .
     op split(_) : Name -> Label [ctor frozen] .
     op put(_,_,_) : List{Name} List{Secret} Name -> Label [ctor frozen] .
-    op [_]_ : List{Name} Configuration -> LConfiguration [ctor frozen] .
+    op [_]_ : List{Name} Configuration -> LConfiguration [ctor] .
     op {_}[_]_ : Label List{Name} Configuration -> LConfiguration [ctor frozen] .
 
     *** Allow progression of labelled configuration
     crl [Rifl] : {l} [fv] S => [fv'] S' if [fv] S => {l'} [fv'] S' .
     
     crl [C-Split] : [fv] (< (split (splitEntries) ), v > y | S) => { split(y) } [fv fv'] ((|| splitEntries fv') | S ) 
-                    if fv' := fresh(fv,size(splitEntries)) /\ occurs(y,fv) /\  v == value(splitEntries) .
+                    if fv' := fresh(fv,size(splitEntries)) .
 
     *** prova
 ***    crl [C-Put] : [fv] (< (put x x' x'' reveal a if p . C), v > y | (< A, v''' > x) | (< A', v' > x') | (< A'', v'' > x'') | S) =>
 ***                    { put(x x' x'',nil,y) } [fv z] ( < C, (v + (v' + (v'' + v'')))  > z | S )
 ***                    if z := fresh(fv) . ***/\ occurs(y,fv) /\ listOccurs(x^,fv) /\  p == true .
 
-    *** bo, non espande || per il matching
-    crl [C-PutReveal] : [fv] (< (put x^ reveal a^ if p . C), v > y | (|| A^ v^ x^) | (|| B^ a^ N^) | S) => 
-                    { put(x^,a^,y) } [fv z] ( < C, v + v^  > z | (|| B^ a^ N^) | S )
-                    if z := fresh(fv) . ***/\ occurs(y,fv) /\ listOccurs(x^,fv) /\  p == true .
+    crl [C-PutReveal] : [fv] (< (put (x^) reveal a^ if p . C), v > y | S) => 
+                    { put(x^,a^,y) } [fv z] ( < C, v > z | S'')
+                    if z := fresh(fv) /\ 
+                        Some (S' S'') := (deposits x^ S) /\ *** S' are deposits in S, S'' == S \ S'
+                        Some S''' := (secrets a^ S) /\
+                        p == true .
 
 ***    rl [DEF-AUTHJOIN] :  < A , v > x | < A , v' > y | S => { A : x y } ( < A , v > x | < A , v' > y | A[ x y |> < A , v + v' > ] | S ) .
 ***    crl [DEF-JOIN] :  < A , v > x | < A , v' > y | A[ x y |> < A , v + v' > ] | A[ y x |> < A , v + v' > ] | S => join(x,y) < A , v + v' > z | S if z := freshD(S) . 
@@ -448,6 +493,7 @@ mod ODDS-EVENS is
     op a : -> Secret .
     ops v v' v'' : -> Value .
     ops x x' x'' y : -> Name .
+    op C : -> Contract .
     
     eq OddsEvens = split(
         v(2) ~> ( reveal b if p . withdraw B + after t : withdraw A )
@@ -475,4 +521,45 @@ mod ODDS-EVENS is
 
 endm
 
-rewrite in ODDS-EVENS : ESputReveal(x x' x'', v v' v'', A A A) .
+
+mod TEST is 
+    protecting BITML .
+    ops A B A' B' : -> Participant .
+    ops x x' x'' : -> Name .
+    ops y y' y'' : -> Name .
+    ops z z' z'' : -> Name .
+    ops v v' v'' : -> Value .
+    ops a a' a'' : -> Secret .
+    ops b b' b'' : -> Secret .
+    ops x^ y^ z^ : -> List{name} . 
+    ops v^ : -> List{Value} . 
+    ops a^ b^ : -> List{Secret} . 
+    ops t t' : -> Nat .
+    ops p p' p'' : -> Predicate .
+    ops C C' C'' : -> Contract .
+    ops D D' D'' : -> AdvContract .
+endm
+
+***set trace on .
+***trace exclude BOOL EXT-BOOL STRING NAT LIST{Name} LIST{Secret} LIST{SplitEntry} FULL-MAUDE .
+***set trace eq off .
+rewrite in TEST : 
+    [x x' x'' y]
+        < put x x' x'' reveal a a'' if true . C, v(10) > y 
+        | < A, v > x | < B, v' > x' | < A', v'' > x''
+        | B : a # 10 | B' : a'' # 4 .
+
+search in TEST : 
+    [x x' x'' y]
+        < put x x' x'' reveal a a'' if true . C, v(10) > y 
+        | < A, v > x | < B, v' > x' | < A', v'' > x''
+        | B : a # 10 | B' : a'' # 4 
+    =>*
+    {put(x x' x'',a a'',y)}[x x' x'' y x("x_0")]< C,v(10) >
+    x("x_0") | B : a # 10 | B' : a'' # 4
+    .
+
+    
+    
+    
+    

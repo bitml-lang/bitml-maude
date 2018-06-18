@@ -14,5 +14,10 @@
 			<type>2</type>
 			<location>/home/nicola/repositories/co2-maude</location>
 		</link>
+		<link>
+			<name>maude</name>
+			<type>2</type>
+			<location>/usr/share/maude</location>
+		</link>
 	</linkedResources>
 </projectDescription>
