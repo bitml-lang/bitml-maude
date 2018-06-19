@@ -115,13 +115,13 @@ fmod BITML-SYNTAX is
     *** Contract 
     ***
     op 0 : -> Contract [ctor] .                                                                             *** [contr.id]
-    op tau : -> Contract [ctor] .                                                                           *** [contr.tau]
+    op tau . _ : Contract -> Tau [ctor] .                                                                   *** [contr.tau]
     op put_reveal_if_._ : List{Name} List{Secret} Predicate Contract -> PutReveal [ctor prec 25 frozen] .   *** [contr.put-reveal]
     op withdraw_ : Participant -> Withdraw [ctor prec 25 frozen] .                                          *** [contr.withdraw]
-    op _[_] : Participant GuardedContract -> AuthC [ctor prec 25 frozen] .                                  *** [contr.authorization]
+    op _:_ : Participant GuardedContract -> AuthC [ctor prec 25 frozen] .                                   *** [contr.authorization]
     op after_:_ : Nat GuardedContract -> After [ctor prec 25 frozen] .                                      *** [contr.after]
     op split(_) : List{SplitEntry} -> Split [ctor prec 25 frozen] .                                         *** [contr.split]
-    op _+_ : GuardedContract GuardedContract -> Contract [comm assoc ctor id: 0 frozen] .                   *** [contr.sum]
+    op _+_ : GuardedContract GuardedContract -> GuardedContract [comm assoc ctor id: 0 frozen] .            *** [contr.sum]
 
     ***
     *** Contract Preconditions
@@ -211,7 +211,7 @@ fmod BITML-FREENAME is
     var acc : List{Name} .
     var C C' : Contract .
     var sel : List{SplitEntry} .
-    var GC : GuardedContract .
+    var D D' : GuardedContract .
     var cp cp' : ContractPrecondition .
     var advC : AdvContract .
     var p : Predicate .
@@ -233,11 +233,11 @@ fmod BITML-FREENAME is
     *** Contract 
     ***
     eq is x free in (0).Contract = false .                                                           *** [contr.id]
-    eq is x free in tau = false .                                                                    *** [contr.tau]
+    eq is x free in tau . C = false .                                                                    *** [contr.tau]
     eq is x free in put dL reveal sL if p . C = is x free in dL or-else is x free in C .             *** [contr.put-reveal]
     eq is x free in withdraw A = false .                                                             *** [contr.withdraw]
-    eq is x free in A[GC] = is x free in GC .                                                        *** [contr.authorization]
-    eq is x free in after t : GC = is x free in GC .                                                 *** [contr.after]
+    eq is x free in A : D = is x free in D .                                                        *** [contr.authorization]
+    eq is x free in after t : D = is x free in D .                                                 *** [contr.after]
     eq is x free in split( nil ) = false .                                                           *** [contr.split]
     eq is x free in split( (v ~> C) sel ) = is x free in C or-else is x free in split(sel) .         *** [contr.split]
     ceq is x free in C + C' = is x free in C or-else is x free in C' if C =/= 0 /\ C' =/= 0 .        *** [contr.sum]
@@ -272,7 +272,7 @@ fmod BITML-FREENAME is
     ***
     eq is x free in #|> advC = is x free in advC .                      *** [auth.commit-secret]
     eq is x free in y |> advC = x == y or-else is x free in advC .      *** [auth.spend-deposit]
-    eq is x free in y |> GC = x == y or-else is x free in GC .          *** [auth.take-branch]
+    eq is x free in y |> D = x == y or-else is x free in D .          *** [auth.take-branch]
     eq is x free in (y z |> d) = x == y or x == z .                     *** [auth.join]
     eq is x free in (y |> d d') = x == y .                              *** [auth.divide]
     eq is x free in (y |> B) = x == y .                                 *** [auth.donate]
@@ -308,11 +308,12 @@ fmod BITML-UTILS is
     protecting BITML-STREQ .
     
     var v : Value .
-    var x : Name .
+    var x y x' y' x'' y'' : Name .
     var tail : List{SplitEntry} .
     var tail2 : List{Name} .
     var e : SplitEntry .
     var C : Contract .
+    vars D D' : GuardedContract .
     var S S' : Configuration .
     var n n' N : Nat .
     var a : Secret .
@@ -402,6 +403,21 @@ fmod BITML-UTILS is
     eq secretsTR (a a^) ((A : a # N) | S) accConf = secretsTR a^ S (accConf | A : a # N) .
     eq secretsTR a^ S accConf = None [owise].
 
+
+    ***
+    *** Given a participant A and a guarded contract D,
+    *** search for A [ y |> D ] within a configuration S.
+    *** 
+    *** Return a Some(S') with S' == all the authorization A [ y |> D ]
+    *** or None if some secret is not found.
+    ***
+    op searchAuth___ : Participant GuardedContract Configuration -> Option .
+    eq searchAuth A D S = searchAuthTR A D S 0 .
+    op searchAuthTR____ : Participant GuardedContract Configuration Configuration -> Option .
+    eq searchAuthTR A D 0 0 = None .                  *** base case
+    eq searchAuthTR A D 0 accConf = Some accConf .    *** base case
+    eq searchAuthTR A D (A [ y |> D ] | S) accConf = searchAuthTR A D S (accConf | A [ y |> D ]) .
+    eq searchAuthTR A D (S | S') accConf = searchAuthTR A D S' accConf [owise] .
 endfm
 
 mod BITML-SEM is
@@ -412,7 +428,8 @@ mod BITML-SEM is
     protecting BITML-UTILS .
     
     var A B A' B' A'' B'' : Participant .
-    var C : Contract .
+    var C C' : Contract .
+    var D D' : GuardedContract .
     vars v v' v'' v''' : Value .
     vars x y z x' y' z' x'' y'' z'' : Name .
     vars x^ y^ : List{Name} .
@@ -433,8 +450,9 @@ mod BITML-SEM is
     
     sorts Label .
     sorts LConfiguration .
+    sorts FConfiguration .
     
-    subsorts Configuration < LConfiguration .
+    subsorts Configuration < FConfiguration < LConfiguration .
     
     *** Labels
     op init : -> Label [ctor] .
@@ -442,6 +460,7 @@ mod BITML-SEM is
     op _:___ : Participant Name Value Value -> Label [ctor frozen] .
     op _:__ : Participant Name Participant  -> Label [ctor frozen] .
     op _:_ : Participant Secret  -> Label [ctor frozen] .
+    op _:_,_ : Participant Name Contract  -> Label [ctor frozen] .
     op withdraw(_,_,_) : Participant Value Name -> Label [ctor frozen] .
     op join(_,_) : Name Name -> Label [ctor frozen] .
     op divide(_,_,_) : Name Name Name -> Label [ctor frozen] .
@@ -449,8 +468,8 @@ mod BITML-SEM is
     op split(_) : Name -> Label [ctor frozen] .
     op put(_,_,_) : List{Name} List{Secret} Name -> Label [ctor frozen] .
     
-    op [_]_ : List{Name} Configuration -> LConfiguration [ctor] .
-    op {_}[_]_ : Label List{Name} Configuration -> LConfiguration [ctor frozen] .
+    op [_]_ : List{Name} Configuration -> FConfiguration [ctor] .
+    op {_}_ : Label FConfiguration -> LConfiguration [ctor frozen] .
 
     *** Allow progression of labelled configuration
     crl [Rifl] : {l} [fv] S => [fv'] S' if [fv] S => {l'} [fv'] S' .
@@ -465,10 +484,13 @@ mod BITML-SEM is
                         Some S''' := (secrets a^ S) /\
                         p == true .
 
-    rl [C-AuthRev] : [fv] {A : a # N} | S => { A : a } [fv] A : a # N | S .
+    rl [C-AuthRev] : [fv] {A : a # N} | S => { A : a } [fv] (A : a # N | S) .
     
-    crl [C-Withdraw] : [fv] < withdraw A, v > y | S => { withdraw(A,v,y) } [fv z] < A, v > z | S 
-                    if z := fresh(fv).
+    crl [C-Withdraw] : [fv] < withdraw A, v > y | S => { withdraw(A,v,y) } [fv z] (< A, v > z | S)
+                    if z := fresh(fv) .
+    
+    crl [C-AuthControl] : [fv] < A : D + C, v > y | S => { A : y, D } [fv] (< A : D + C, v > y | A [ y |> D ] | S)
+                    if None := (searchAuth A D S) .
     
 ***    rl [DEF-AUTHJOIN] :  < A , v > x | < A , v' > y | S => { A : x y } ( < A , v > x | < A , v' > y | A[ x y |> < A , v + v' > ] | S ) .
 ***    crl [DEF-JOIN] :  < A , v > x | < A , v' > y | A[ x y |> < A , v + v' > ] | A[ y x |> < A , v + v' > ] | S => join(x,y) < A , v + v' > z | S if z := freshD(S) . 
@@ -540,7 +562,7 @@ mod TEST is
     ops t t' : -> Nat .
     ops p p' p'' : -> Predicate .
     ops C C' C'' : -> Contract .
-    ops D D' D'' : -> AdvContract .
+    ops D D' D'' : -> GuardedContract .
 endm
 
 ***set trace on .
