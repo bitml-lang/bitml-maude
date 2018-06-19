@@ -320,14 +320,14 @@ fmod BITML-UTILS is
     var e : SplitEntry .
     var C : Contract .
     vars D D' : GuardedContract .
-    var S S' : Configuration .
+    var S S' S'' S''' : Configuration .
     var n n' N : Nat .
     var a : Secret .
     vars x^ y^ : List{Name} .
     vars a^ : List{Secret} .
     vars v^ : List{Value} .
     vars A B : Participant .
-    vars A^ B^ : List{Participant} .
+    vars A^ B^ : Set{Participant} .
     vars N^ : List{Nat} .
     var accConf : Configuration .    
     
@@ -386,7 +386,7 @@ fmod BITML-UTILS is
     eq toConf Some S = S .    
     
     ***
-    *** Given a list of names and S, split the deposits from S.
+    *** Given a list of names x^ and S, split the deposits from S.
     *** Return a Some(D R) with D == all deposits in S and R == S \ D,
     *** or None if some deposit is not found.
     ***
@@ -398,7 +398,7 @@ fmod BITML-UTILS is
     eq depositsTR x^ S accConf = None [owise].
 
     ***
-    *** Given a list of secrets and S, fetch all the secrets in S.
+    *** Given a list of secrets a^ and S, fetch all the secrets in S.
     *** Return a Some(S') with S' == all secrets in S,
     *** or None if some secret is not found.
     ***
@@ -411,19 +411,17 @@ fmod BITML-UTILS is
 
 
     ***
-    *** Given a participant A and a guarded contract D,
-    *** search for A [ y |> D ] within a configuration S.
-    *** 
-    *** Return a Some(S') with S' == all the authorization A [ y |> D ]
-    *** or None if some secret is not found.
+    *** Given a set of participants A^ and a guarded contract D,
+    *** search for all A [ y |> D ] within a configuration S.
+    *** Return a Some(S' R) with S' == all the authorization A [ y |> D ]
+    *** or None if some authorization is not found.
     ***
-    op searchAuth___ : Participant GuardedContract Configuration -> Option .
-    eq searchAuth A D S = searchAuthTR A D S 0 .
-    op searchAuthTR____ : Participant GuardedContract Configuration Configuration -> Option .
-    eq searchAuthTR A D 0 0 = None .                  *** base case
-    eq searchAuthTR A D 0 accConf = Some accConf .    *** base case
-    eq searchAuthTR A D (A [ y |> D ] | S) accConf = searchAuthTR A D S (accConf | A [ y |> D ]) .
-    eq searchAuthTR A D (S | S') accConf = searchAuthTR A D S' accConf [owise] .
+    op searchAuth____ : Set{Participant} GuardedContract Name Configuration -> Option .
+    eq searchAuth A^ D y S = searchAuthTR A^ D y S 0 .
+    op searchAuthTR_____ : Set{Participant} GuardedContract Name Configuration Configuration -> Option .
+    eq searchAuthTR empty D y S accConf = Some (accConf S) .    *** base case
+    eq searchAuthTR (A, A^) D y (A [ y |> D ] | S) accConf = searchAuthTR A^ D y S (accConf | A [ y |> D ]) .
+    eq searchAuthTR A^ D y S accConf = None [owise] .
 endfm
 
 mod BITML-SEM is
@@ -441,7 +439,7 @@ mod BITML-SEM is
     vars x^ y^ : List{Name} .
     vars a^ : List{Secret} .
     vars v^ : List{Value} .
-    vars A^ B^ : List{Participant} .
+    vars A^ B^ : Set{Participant} .
     vars n^ N^ : List{Nat} .
     vars S S' S'' S''' P P' : Configuration .
     vars a a' : Secret .
@@ -489,7 +487,7 @@ mod BITML-SEM is
 
     crl [C-PutReveal] : [fv] (< (put (x^) reveal a^ if p . C), v > y | S) => 
                     { put(x^,a^,y) } [fv z] ( < C, v > z | S'')
-                    if z := fresh(fv) /\ 
+                    if  z := fresh(fv) /\ 
                         Some (S' S'') := (deposits x^ S) /\ *** S' are deposits in S, S'' == S \ S'
                         Some S''' := (secrets a^ S) /\
                         p == true .
@@ -497,13 +495,15 @@ mod BITML-SEM is
     rl [C-AuthRev] : [fv] {A : a # N} | S => { A : a } [fv] (A : a # N | S) .
     
     crl [C-Withdraw] : [fv] < withdraw A, v > y | S => { withdraw(A,v,y) } [fv z] (< A, v > z | S)
-                    if z := fresh(fv) .
+                    if  z := fresh(fv) .
     
     crl [C-AuthControl] : [fv] < (A, A^) : D + C, v > y | S => { A : y, D } [fv] (< (A, A^) : D + C, v > y | A [ y |> D ] | S)
-                    if None := (searchAuth A D S) .
+                    if  None := (searchAuth A D y S) .
     
-***    crl [C-Control] : [fv] < A : D + C, v > y | S => { A : y, D } [fv] (< A : D + C, v > y | A [ y |> D ] | S)
-***                    if None := (searchAuth A D S) .
+    crl [C-Control] : [fv] < A^ : D + C, v > y | S => {l'} [fv'] S'
+                    if  Some (S'' S''') := (searchAuth A^ D y S) /\    *** S'' are authorizations, S''' S \ S''
+                        [fv] < D, v > y | S''' => {l'} [fv'] S' /\
+                        Some y == cv(l') .
     
 ***    op join(_,_) : Name Name -> Label [ctor frozen] .
 ***    op divide(_,_,_) : Name Name Name -> Label [ctor frozen] .
