@@ -99,6 +99,7 @@ fmod BITML-SYNTAX is
     protecting LIST{SplitEntry} .
     protecting LIST{Configuration} .
     protecting LIST{Participant} .
+    protecting SET{Participant} .
     protecting LIST{Nat} .
     protecting LIST{Value} .
     
@@ -118,7 +119,7 @@ fmod BITML-SYNTAX is
     op tau . _ : Contract -> Tau [ctor] .                                                                   *** [contr.tau]
     op put_reveal_if_._ : List{Name} List{Secret} Predicate Contract -> PutReveal [ctor prec 25 frozen] .   *** [contr.put-reveal]
     op withdraw_ : Participant -> Withdraw [ctor prec 25 frozen] .                                          *** [contr.withdraw]
-    op _:_ : Participant GuardedContract -> AuthC [ctor prec 25 frozen] .                                   *** [contr.authorization]
+    op _:_ : Set{Participant} GuardedContract -> AuthC [ctor prec 25 frozen] .                                   *** [contr.authorization]
     op after_:_ : Nat GuardedContract -> After [ctor prec 25 frozen] .                                      *** [contr.after]
     op split(_) : List{SplitEntry} -> Split [ctor prec 25 frozen] .                                         *** [contr.split]
     op _+_ : GuardedContract GuardedContract -> GuardedContract [comm assoc ctor id: 0 frozen] .            *** [contr.sum]
@@ -164,23 +165,28 @@ endfm
 fmod BITML-STREQ is
     protecting BITML-SYNTAX .
     
-    var D : List{Name} .
-    var S : List{Secret} .
+    var x^ : List{Name} .
+    var a^ : List{Secret} .
     var C : Contract .
     var p : Predicate .
-        
+    vars A B : Participant .
+    vars A^ B^ : Set{Participant} .
+    var D : GuardedContract .
+
     op put_._ : List{Name} Contract -> PutReveal .
     op put_if_._ : List{Name} Predicate Contract -> PutReveal .
     op reveal_._ : List{Secret} Contract -> PutReveal .
     op reveal_if_._ : List{Secret} Predicate Contract -> PutReveal .
     op put_reveal_._ : List{Name} List{Secret} Contract -> PutReveal .
     
-    eq put D . C = put D reveal nil if true . C .
-    eq put D if p . C = put D reveal nil if p . C .
-    eq reveal S . C = put nil reveal S if true . C .
-    eq reveal S if p . C = put nil reveal S if p . C .
-    eq put D reveal S . C = put D reveal S if true . C .
+    eq put x^ . C = put x^ reveal nil if true . C .
+    eq put x^ if p . C = put x^ reveal nil if p . C .
+    eq reveal a^ . C = put nil reveal a^ if true . C .
+    eq reveal a^ if p . C = put nil reveal a^ if p . C .
+    eq put x^ reveal a^ . C = put x^ reveal a^ if true . C .
     
+    eq A : A^ : D = (A, A^) : D .
+    eq A^ : A : D = (A^, A) : D .
     *** TODO: add more...
 endfm
 
@@ -462,14 +468,18 @@ mod BITML-SEM is
     op _:_ : Participant Secret  -> Label [ctor frozen] .
     op _:_,_ : Participant Name Contract  -> Label [ctor frozen] .
     op withdraw(_,_,_) : Participant Value Name -> Label [ctor frozen] .
-    op join(_,_) : Name Name -> Label [ctor frozen] .
-    op divide(_,_,_) : Name Name Name -> Label [ctor frozen] .
-    op donate(_,_) : Name Participant -> Label [ctor frozen] .
     op split(_) : Name -> Label [ctor frozen] .
     op put(_,_,_) : List{Name} List{Secret} Name -> Label [ctor frozen] .
-    
+
     op [_]_ : List{Name} Configuration -> FConfiguration [ctor] .
     op {_}_ : Label FConfiguration -> LConfiguration [ctor frozen] .
+
+    *** cv(l) : get the name from a label l
+    op cv(_) : Label -> Option .
+    eq cv(withdraw(A,v,x)) = Some x .
+    eq cv(split(x)) = Some x .
+    eq cv(put(x^,a^,y)) = Some y .
+    eq cv(l) = None [owise].
 
     *** Allow progression of labelled configuration
     crl [Rifl] : {l} [fv] S => [fv'] S' if [fv] S => {l'} [fv'] S' .
@@ -489,9 +499,15 @@ mod BITML-SEM is
     crl [C-Withdraw] : [fv] < withdraw A, v > y | S => { withdraw(A,v,y) } [fv z] (< A, v > z | S)
                     if z := fresh(fv) .
     
-    crl [C-AuthControl] : [fv] < A : D + C, v > y | S => { A : y, D } [fv] (< A : D + C, v > y | A [ y |> D ] | S)
+    crl [C-AuthControl] : [fv] < (A, A^) : D + C, v > y | S => { A : y, D } [fv] (< (A, A^) : D + C, v > y | A [ y |> D ] | S)
                     if None := (searchAuth A D S) .
     
+***    crl [C-Control] : [fv] < A : D + C, v > y | S => { A : y, D } [fv] (< A : D + C, v > y | A [ y |> D ] | S)
+***                    if None := (searchAuth A D S) .
+    
+***    op join(_,_) : Name Name -> Label [ctor frozen] .
+***    op divide(_,_,_) : Name Name Name -> Label [ctor frozen] .
+***    op donate(_,_) : Name Participant -> Label [ctor frozen] .
 ***    rl [DEF-AUTHJOIN] :  < A , v > x | < A , v' > y | S => { A : x y } ( < A , v > x | < A , v' > y | A[ x y |> < A , v + v' > ] | S ) .
 ***    crl [DEF-JOIN] :  < A , v > x | < A , v' > y | A[ x y |> < A , v + v' > ] | A[ y x |> < A , v + v' > ] | S => join(x,y) < A , v + v' > z | S if z := freshD(S) . 
 ***    rl [DEF-AUTHDIVIDE] :  < A , v + v' > x | S => { A : x v v' } ( < A , v + v' > x | A[ x |> < A , v > < A , v' > ] | S ) .
@@ -563,6 +579,7 @@ mod TEST is
     ops p p' p'' : -> Predicate .
     ops C C' C'' : -> Contract .
     ops D D' D'' : -> GuardedContract .
+    ops l l' l'' : -> Label .
 endm
 
 ***set trace on .
