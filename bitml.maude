@@ -172,6 +172,7 @@ fmod BITML-STREQ is
     vars A B : Participant .
     vars A^ B^ : Set{Participant} .
     var D : GuardedContract .
+    vars t t' : Nat .
 
     op put_._ : List{Name} Contract -> PutReveal .
     op put_if_._ : List{Name} Predicate Contract -> PutReveal .
@@ -185,8 +186,13 @@ fmod BITML-STREQ is
     eq reveal a^ if p . C = put nil reveal a^ if p . C .
     eq put x^ reveal a^ . C = put x^ reveal a^ if true . C .
     
+    eq empty : D = D .
     eq A : A^ : D = (A, A^) : D .
     eq A^ : A : D = (A^, A) : D .
+
+    eq after 0 : D = D .
+    eq after t : after t' : D = after max(t,t') : D .
+
     *** TODO: add more...
 endfm
 
@@ -443,7 +449,7 @@ mod BITML-SEM is
     vars n^ N^ : List{Nat} .
     vars S S' S'' S''' P P' : Configuration .
     vars a a' : Secret .
-    vars n n' N : Nat .
+    vars n n' N t t' : Nat .
     vars s s' : Secret .
     vars s^ : List{Secret} .
     vars l l' : Label .
@@ -465,6 +471,7 @@ mod BITML-SEM is
     op _:__ : Participant Name Participant  -> Label [ctor frozen] .
     op _:_ : Participant Secret  -> Label [ctor frozen] .
     op _:_,_ : Participant Name Contract  -> Label [ctor frozen] .
+    op delta_ : Nat -> Label [ctor frozen] .
     op withdraw(_,_,_) : Participant Value Name -> Label [ctor frozen] .
     op split(_) : Name -> Label [ctor frozen] .
     op put(_,_,_) : List{Name} List{Secret} Name -> Label [ctor frozen] .
@@ -497,14 +504,26 @@ mod BITML-SEM is
     crl [C-Withdraw] : [fv] < withdraw A, v > y | S => { withdraw(A,v,y) } [fv z] (< A, v > z | S)
                     if  z := fresh(fv) .
     
-    crl [C-AuthControl] : [fv] < (A, A^) : D + C, v > y | S => { A : y, D } [fv] (< (A, A^) : D + C, v > y | A [ y |> D ] | S)
+    crl [C-AuthControl] : [fv] < (A, A^) : D + C, v > y | S => { A : y, D } [fv] (< (A, A^) : D + C, v > y | A [ y |> (A, A^) : D ] | S)
                     if  None := (searchAuth A D y S) .
     
-    crl [C-Control] : [fv] < A^ : D + C, v > y | S => {l'} [fv'] S'
+    crl [C-Control] : [fv] < A^ : after t : D + C, v > y | S => {l'} [fv'] S'
                     if  Some (S'' S''') := (searchAuth A^ D y S) /\    *** S'' are authorizations, S''' S \ S''
                         [fv] < D, v > y | S''' => {l'} [fv'] S' /\
                         Some y == cv(l') .
     
+    crl [Action] : [fv] S | time t => {l'} [fv'] S' | time t
+                    if  [fv] S => {l'} [fv'] S' /\
+                        None == cv(l') .
+      
+    crl [Delay] : [fv] S | time t => {delta n} S | time n
+                    if n := 1 .  *** get the best delay from S
+
+    crl [Timeout] : [fv] < A^ : after t : D + C, v > y | S | time t' => {l'} [fv'] (S' | time t')
+                    if  [fv] < A^ : after t : D, v > y | S => {l'} [fv'] S' /\
+                        Some y == cv(l') .
+
+  
 ***    op join(_,_) : Name Name -> Label [ctor frozen] .
 ***    op divide(_,_,_) : Name Name Name -> Label [ctor frozen] .
 ***    op donate(_,_) : Name Participant -> Label [ctor frozen] .
@@ -580,6 +599,10 @@ mod TEST is
     ops C C' C'' : -> Contract .
     ops D D' D'' : -> GuardedContract .
     ops l l' l'' : -> Label .
+    
+    vars SS SS' : Configuration .
+    vars ll ll' : Label .
+    vars xx^ : List{Name} .
 endm
 
 ***set trace on .
@@ -602,6 +625,9 @@ endm
 ***    .
 
     
-    
+rewrite in TEST :
+    [x]< A : after 1 : withdraw
+    B + (A, B) : after 1 : withdraw A,v > x | A[x |> after 1 : withdraw A] | A[
+    x |> after 1 : withdraw B] | B[x |> after 1 : withdraw A] .
     
     
