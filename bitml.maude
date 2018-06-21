@@ -99,7 +99,7 @@ fmod BITML-SYNTAX is
     protecting LIST{Configuration} .
     protecting LIST{Participant} .
     protecting SET{Participant} .
-    protecting LIST{Nat} .
+    protecting SORTABLE-LIST{Nat<} .
     protecting LIST{Value} .
     
 
@@ -191,6 +191,7 @@ fmod BITML-STREQ is
     eq after 0 : D = D .
     eq after t : after t' : D = after max(t,t') : D .
 
+    eq after t : A : D = A : after t : D .
     *** TODO: add more...
 endfm
 
@@ -292,7 +293,7 @@ fmod BITML-UTILS is
     var tail : List{SplitEntry} .
     var tail2 : List{Name} .
     var e : SplitEntry .
-    var C : Contract .
+    var C C' : Contract .
     vars D D' : GuardedContract .
     var S S' S'' S''' : Configuration .
     var n n' N : Nat .
@@ -302,9 +303,12 @@ fmod BITML-UTILS is
     vars v^ : List{Value} .
     vars A B : Participant .
     vars A^ B^ : Set{Participant} .
-    vars N^ : List{Nat} .
+    vars N^ : List{Nat<} .
     var accConf : Configuration .    
-    
+    var n^ : List{Nat<} .
+    var p : Predicate .
+    var sel : List{SplitEntry} .
+ 
     ***
     *** return a fresh Name
     ***
@@ -360,8 +364,8 @@ fmod BITML-UTILS is
     
     ***
     ***
-    op ||___ : List{Participant} List{Secret} List{Nat} -> Configuration .
-    eq || (nil).List{Participant} (nil).List{Secret} (nil).List{Nat} = 0 .
+    op ||___ : List{Participant} List{Secret} List{Nat<} -> Configuration .
+    eq || (nil).List{Participant} (nil).List{Secret} (nil).List{Nat<} = 0 .
     ceq || (A A^) (a a^) (N N^) = A : a # N | || A^ a^ N^ if size(A^) == size(a^) /\ size(a^) == size(N^) .
 
     ***
@@ -423,6 +427,32 @@ fmod BITML-UTILS is
     eq searchAuthTR empty D y S accConf = Some (accConf S) .    *** base case
     eq searchAuthTR (A, A^) D y (A [ y |> D ] | S) accConf = searchAuthTR A^ D y S (accConf | A [ y |> D ]) .
     eq searchAuthTR A^ D y S accConf = None [owise] .
+
+    ***
+    *** Return a ordered list of absolute times
+    ***
+    op timelocks : Configuration -> List{Nat<} .
+    eq timelocks(S) = sort ($timelocks(S, nil)) .
+    
+    op $timelocks : Configuration List{Nat<} -> List{Nat<} .    
+    eq $timelocks((0).Configuration, n^) = n^ .
+    eq $timelocks(< C, v > x, n^) = $timelocks(C, n^) .
+    ceq $timelocks(S | S', n^) = $timelocks(S, n^) $timelocks(S', n^) if S =/= 0 /\ S' =/= 0 .
+    eq $timelocks(S, n^) = n^ [owise] .
+    
+    op timelocks : Contract -> List{Nat<} .
+    eq timelocks(C) = sort ($timelocks(C, nil)) .
+    
+    op $timelocks : Contract List{Nat<} -> List{Nat<} .    
+    eq $timelocks((0).Contract, n^) = n^ .
+    eq $timelocks(tau . D, n^) = $timelocks(D, n^) .
+    eq $timelocks(put x^ reveal a^ if p . C, n^) = $timelocks(C, n^) .
+    eq $timelocks(withdraw A, n^) = n^ .
+    eq $timelocks(A^ : D, n^) = $timelocks(D, n^) .
+    eq $timelocks(after n : D, n^) = $timelocks(D, n n^) .
+    eq $timelocks(split(nil),n^) = n^ .
+    eq $timelocks(split( (v ~> C) sel ), n^) = $timelocks(split(sel), n^) $timelocks(C, n^) .
+    ceq $timelocks(C + C', n^) = $timelocks(C, n^) $timelocks(C', n^) if C =/= 0 /\ C' =/= 0 .
 endfm
 
 mod BITML-SEM is
@@ -441,7 +471,7 @@ mod BITML-SEM is
     vars a^ : List{Secret} .
     vars v^ : List{Value} .
     vars A^ B^ : Set{Participant} .
-    vars n^ N^ : List{Nat} .
+    vars n^ N^ t^ t'^ : List{Nat<} .
     vars S S' S'' S''' P P' : Configuration .
     vars a a' : Secret .
     vars n n' N t t' : Nat .
@@ -473,7 +503,7 @@ mod BITML-SEM is
     op put(_,_,_) : List{Name} List{Secret} Name -> Label [ctor frozen] .
 
     op [_]_ : List{Name} Configuration -> FConfiguration [ctor frozen] .
-    op <_>_ : Nat FConfiguration -> TConfiguration [ctor frozen] .
+    op <__>_ : Nat List{Nat<} FConfiguration -> TConfiguration [ctor frozen] .
     op {_}_ : Label TConfiguration -> LConfiguration [ctor frozen] .
 
     *** cv(l) : get the name from a label l
@@ -483,12 +513,13 @@ mod BITML-SEM is
     eq cv(put(x^,a^,y)) = Some y .
     eq cv(l) = None [owise].
 
+    
     *** Allow progression of labelled configuration
     crl [Rifl] : {l} [fv] S => [fv'] S' if [fv] S => {l'} [fv'] S' .
 
     *** Allow progression of timed labelled configuration
-    crl [RiflT] : {l} < t > [fv] S => < t' > [fv'] S' if < t > [fv] S => {l'} < t' > [fv'] S' .
-    
+    crl [RiflT] : {l} < t t^ > [fv] S => < t' t'^ > [fv'] S' if < t t^ > [fv] S => {l'} < t' t'^ > [fv'] S' .
+
     ***
     *** [fv] S => {l} [fv'] S'    
     ***
@@ -518,15 +549,16 @@ mod BITML-SEM is
     ***
     *** <t> [fv] S => {l} <t'> [fv'] S'    
     ***
-    crl [Action] : < t > [fv] S => {l'} < t > [fv'] S'
+    crl [Action] : < t t^ > [fv] S => {l'} < t t^ > [fv'] S'
                     if  [fv] S => {l'} [fv'] S' /\
                         None == cv(l') .            *** not a withdraw/split/put-reveal
       
-    crl [Delay] : < t > [fv] S => {delta n} < t + n > [fv] S 
-                    if n := 1 /\ t < 100 .  *** get the best delay from S
+    crl [Delay] : < t t^ > [fv] S => {delta (t' + - t)} < t' tail(t^) > [fv] S 
+                    if t^ =/= nil /\ t' := head(t^).
 
-    crl [Timeout] : < t > [fv] < A^ : after t : D + C, v > y | S => {l'} < t > [fv'] S'
+    crl [Timeout] : < t t^ > [fv] < A^ : after t' : D + C, v > y | S => {l'} < t t^ > [fv'] S'
                     if  [fv] < A^ : after t : D, v > y | S => {l'} [fv'] S' /\
+                        t >= t' /\
                         Some y == cv(l') .          *** withdraw/split/put-reveal
 
   
@@ -631,8 +663,12 @@ endm
 ***    .
 
 rewrite in TEST :
-     < 0 > [x] < A : after 2 : withdraw B, v > x 
+    < 0 2 > [x] < A : after 2 : withdraw B, v > x 
     | A[x |> A : after 2 : withdraw B] .
     
-   
+***reduce in TEST :
+***    timelocks(
+***	    < after 5 : A : after 2 :  after 4 : withdraw A + after 1 : withdraw B, v > x 
+***	|   < A : after 10 : withdraw A + after 15 : withdraw B, v' > y
+***   ) .
     
