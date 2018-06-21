@@ -195,18 +195,11 @@ fmod BITML-STREQ is
 endfm
 
 ***
-*** Provide fresh names for deposits and contracts
-***
-*** Usage:
-***
-***    fresh( exclude:List{Name} ) : List{Name}
-***    fresh( exclude:List{Name}, size:Nat ) : List{Name}
+*** Unused
 ***
 fmod BITML-FREENAME is
 
-    protecting BITML-SYNTAX .
     protecting BITML-STREQ .
-    protecting CONVERSION .
     
     vars d d' : AnonDeposit .
     vars x y z : Name .
@@ -287,34 +280,12 @@ fmod BITML-FREENAME is
     eq is x free in (y |> B) = x == y .                                 *** [auth.donate]
     eq is x free in (dL n |> y) = is x free in dL .                     *** [auth.destroy]
 
-
-    *** return a fresh Name given a Configuration
-
-    op fresh(_) : List{Name} -> List{Name} [memo] .
-    op fresh(_,_) : List{Name} Nat -> List{Name} [memo] .    
-    op fresh(_,_,_,_,_) : List{Name} Nat Nat Configuration List{Name} -> List{Name} [memo] .
-
-    eq fresh(excludeList) = fresh(excludeList,1,0,0,nil) .
-    eq fresh(excludeList,n) = fresh(excludeList,n,0,0,nil) .
-    *** generic implementation
-    eq fresh(excludeList,n,n',S,acc) = 
-        if n <= 0
-        then acc
-        else if  ((not is x("x_" + string(n')) free in S) and 
-                 (not is x("x_" + string(n')) free in excludeList))
-             then fresh(excludeList,(n - 1),n' + 1,S, acc x("x_" + string(n')))
-             else fresh(excludeList,n,(n' + 1),S,acc)
-             fi 
-        fi .    
-    
-    *** convert natural to string (use CONVERSION module)
-    op string : Nat -> String .
-    eq string(n) = string(n,10) .
 endfm
 
 fmod BITML-UTILS is
 
     protecting BITML-STREQ .
+    protecting CONVERSION .
     
     var v : Value .
     var x y x' y' x'' y'' : Name .
@@ -333,6 +304,33 @@ fmod BITML-UTILS is
     vars A^ B^ : Set{Participant} .
     vars N^ : List{Nat} .
     var accConf : Configuration .    
+    
+    ***
+    *** return a fresh Name
+    ***
+    op fresh(_) : List{Name} -> List{Name} [memo] .
+    op fresh(_,_) : List{Name} Nat -> List{Name} [memo] .    
+    op fresh(_,_,_,_) : List{Name} Nat Nat List{Name} -> List{Name} [memo] .
+
+    eq fresh(x^) = fresh(x^,1) .
+    eq fresh(x^,n) = fresh(x^,n,0,nil) .
+    *** generic implementation
+    ceq fresh(x^,n,n',y^) =
+        if n <= 0
+        then y^
+        else if  occurs(x,x^)        
+             then fresh(x^,n,(n' + 1),y^)
+             else fresh(x^,(n + -1),(n' + 1),(y^ x))
+             fi 
+        fi 
+    if x := x("x_" + string(n')).    
+    
+    ***
+    *** convert natural to string (use CONVERSION module)
+    ***
+    op string(_) : Nat -> String .
+    eq string(n) = string(n,10) .
+    
     
     ***
     *** Take a list of split entries and names to creare a configuration of parallel contracts
@@ -613,7 +611,7 @@ mod TEST is
     vars xx^ : List{Name} .
 endm
 
-set trace on .
+***set trace on .
 ***trace exclude BOOL EXT-BOOL STRING NAT LIST{Name} LIST{Secret} LIST{SplitEntry} FULL-MAUDE .
 ***set trace eq on .
 ***rewrite in TEST : 
