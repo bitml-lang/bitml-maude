@@ -245,11 +245,11 @@ fmod BITML-FREENAME is
     *** Contract 
     ***
     eq is x free in (0).Contract = false .                                                           *** [contr.id]
-    eq is x free in tau . C = false .                                                                    *** [contr.tau]
+    eq is x free in tau . C = false .                                                                *** [contr.tau]
     eq is x free in put dL reveal sL if p . C = is x free in dL or-else is x free in C .             *** [contr.put-reveal]
     eq is x free in withdraw A = false .                                                             *** [contr.withdraw]
-    eq is x free in A : D = is x free in D .                                                        *** [contr.authorization]
-    eq is x free in after t : D = is x free in D .                                                 *** [contr.after]
+    eq is x free in A : D = is x free in D .                                                         *** [contr.authorization]
+    eq is x free in after t : D = is x free in D .                                                   *** [contr.after]
     eq is x free in split( nil ) = false .                                                           *** [contr.split]
     eq is x free in split( (v ~> C) sel ) = is x free in C or-else is x free in split(sel) .         *** [contr.split]
     ceq is x free in C + C' = is x free in C or-else is x free in C' if C =/= 0 /\ C' =/= 0 .        *** [contr.sum]
@@ -284,7 +284,7 @@ fmod BITML-FREENAME is
     ***
     eq is x free in #|> advC = is x free in advC .                      *** [auth.commit-secret]
     eq is x free in y |> advC = x == y or-else is x free in advC .      *** [auth.spend-deposit]
-    eq is x free in y |> D = x == y or-else is x free in D .          *** [auth.take-branch]
+    eq is x free in y |> D = x == y or-else is x free in D .            *** [auth.take-branch]
     eq is x free in (y z |> d) = x == y or x == z .                     *** [auth.join]
     eq is x free in (y |> d d') = x == y .                              *** [auth.divide]
     eq is x free in (y |> B) = x == y .                                 *** [auth.donate]
@@ -505,10 +505,10 @@ mod BITML-SEM is
                     if  z := fresh(fv) .
     
     crl [C-AuthControl] : [fv] < (A, A^) : D + C, v > y | S => { A : y, D } [fv] (< (A, A^) : D + C, v > y | A [ y |> (A, A^) : D ] | S)
-                    if  None := (searchAuth A D y S) .
+                    if  None := (searchAuth A ((A, A^) : D) y S) .
     
     crl [C-Control] : [fv] < A^ : after t : D + C, v > y | S => {l'} [fv'] S'
-                    if  Some (S'' S''') := (searchAuth A^ D y S) /\    *** S'' are authorizations, S''' S \ S''
+                    if  Some (S'' S''') := (searchAuth A^ (A^ : after t : D) y S) /\    *** S'' are authorizations, S''' S \ S''
                         [fv] < D, v > y | S''' => {l'} [fv'] S' /\
                         Some y == cv(l') .
     
@@ -605,9 +605,9 @@ mod TEST is
     vars xx^ : List{Name} .
 endm
 
-***set trace on .
+set trace on .
 ***trace exclude BOOL EXT-BOOL STRING NAT LIST{Name} LIST{Secret} LIST{SplitEntry} FULL-MAUDE .
-***set trace eq off .
+set trace eq on .
 ***rewrite in TEST : 
 ***    [x x' x'' y]
 ***        < put x x' x'' reveal a a'' if true . C, v(10) > y 
@@ -624,10 +624,9 @@ endm
 ***    x("x_0") | B : a # 10 | B' : a'' # 4
 ***    .
 
-    
 rewrite in TEST :
-    [x]< A : after 1 : withdraw
-    B + (A, B) : after 1 : withdraw A,v > x | A[x |> after 1 : withdraw A] | A[
-    x |> after 1 : withdraw B] | B[x |> after 1 : withdraw A] .
+    [x]< A : after 2 : withdraw B, v > x 
+    | A[x |> A : after 2 : withdraw B] .
     
+   
     
