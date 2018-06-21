@@ -45,8 +45,7 @@ fmod BITML-SORTS is
     sort Auth .                 *** A[chi] 
     sort ConfSec .              *** {A:a#N}
     sort ConfRev .              *** A:a#N
-    sort ConfTime .             *** t
-    subsorts AdvContract ActContract Deposit Auth ConfSec ConfRev ConfTime < Configuration .
+    subsorts AdvContract ActContract Deposit Auth ConfSec ConfRev < Configuration .
 
     ***
     *** Authorization
@@ -143,7 +142,6 @@ fmod BITML-SYNTAX is
     op _[_] : Participant AuthAction -> Auth [ctor prec 35 frozen] .                           *** [conf.authorization]
     op {_:_#_} : Participant Secret Nat -> ConfSec [ctor prec 35 frozen] .                     *** [conf.committed-secret]
     op _:_#_ : Participant Secret Nat -> ConfRev [ctor prec 35 frozen] .                       *** [conf.revealed-secret]
-    op time_ : Nat -> ConfTime [ctor prec 35 frozen] .                                         *** [conf.time]
     op _|_ : Configuration Configuration -> Configuration [comm assoc ctor id: 0 frozen] .     *** [conf.parallel]
 
     ***
@@ -275,7 +273,6 @@ fmod BITML-FREENAME is
     eq is x free in A[a] = is x free in a .                                                     *** [conf.authorization]
     eq is x free in { A : s # n } = false .                                                     *** [conf.committed-secret]
     eq is x free in A : s # n = false .                                                         *** [conf.revealed-secret]
-    eq is x free in time n = false .                                                            *** [conf.time]
     ceq is x free in S | S' = is x free in S or-else is x free in S' if S =/= 0 /\ S' =/= 0 .   *** [conf.parallel]
 
 
@@ -459,10 +456,11 @@ mod BITML-SEM is
     vars putDeps putSecs : Option .
     
     sorts Label .
-    sorts LConfiguration .
-    sorts FConfiguration .
+    sorts FConfiguration .  *** configurations with free variables
+    sorts TConfiguration .  *** timed configurations with free variables
+    sorts LConfiguration .  *** labelled timed configurations with free variables
     
-    subsorts Configuration < FConfiguration < LConfiguration .
+    subsorts Configuration < FConfiguration < TConfiguration < LConfiguration .
     
     *** Labels
     op init : -> Label [ctor] .
@@ -476,8 +474,9 @@ mod BITML-SEM is
     op split(_) : Name -> Label [ctor frozen] .
     op put(_,_,_) : List{Name} List{Secret} Name -> Label [ctor frozen] .
 
-    op [_]_ : List{Name} Configuration -> FConfiguration [ctor] .
-    op {_}_ : Label FConfiguration -> LConfiguration [ctor frozen] .
+    op [_]_ : List{Name} Configuration -> FConfiguration [ctor frozen] .
+    op <_>_ : Nat FConfiguration -> TConfiguration [ctor frozen] .
+    op {_}_ : Label TConfiguration -> LConfiguration [ctor frozen] .
 
     *** cv(l) : get the name from a label l
     op cv(_) : Label -> Option .
@@ -488,7 +487,13 @@ mod BITML-SEM is
 
     *** Allow progression of labelled configuration
     crl [Rifl] : {l} [fv] S => [fv'] S' if [fv] S => {l'} [fv'] S' .
+
+    *** Allow progression of timed labelled configuration
+    crl [RiflT] : {l} < t > [fv] S => < t' > [fv'] S' if < t > [fv] S => {l'} < t' > [fv'] S' .
     
+    ***
+    *** [fv] S => {l} [fv'] S'    
+    ***
     crl [C-Split] : [fv] < (split (splitEntries) ), v > y | S => { split(y) } [fv fv'] ((|| splitEntries fv') | S ) 
                     if fv' := fresh(fv,size(splitEntries)) .
 
@@ -512,16 +517,19 @@ mod BITML-SEM is
                         [fv] < D, v > y | S''' => {l'} [fv'] S' /\
                         Some y == cv(l') .
     
-    crl [Action] : [fv] S | time t => {l'} [fv'] S' | time t
+    ***
+    *** <t> [fv] S => {l} <t'> [fv'] S'    
+    ***
+    crl [Action] : < t > [fv] S => {l'} < t > [fv'] S'
                     if  [fv] S => {l'} [fv'] S' /\
-                        None == cv(l') .
+                        None == cv(l') .            *** not a withdraw/split/put-reveal
       
-    crl [Delay] : [fv] S | time t => {delta n} S | time n
-                    if n := 1 .  *** get the best delay from S
+    crl [Delay] : < t > [fv] S => {delta n} < t + n > [fv] S 
+                    if n := 1 /\ t < 100 .  *** get the best delay from S
 
-    crl [Timeout] : [fv] < A^ : after t : D + C, v > y | S | time t' => {l'} [fv'] (S' | time t')
+    crl [Timeout] : < t > [fv] < A^ : after t : D + C, v > y | S => {l'} < t > [fv'] S'
                     if  [fv] < A^ : after t : D, v > y | S => {l'} [fv'] S' /\
-                        Some y == cv(l') .
+                        Some y == cv(l') .          *** withdraw/split/put-reveal
 
   
 ***    op join(_,_) : Name Name -> Label [ctor frozen] .
@@ -607,7 +615,7 @@ endm
 
 set trace on .
 ***trace exclude BOOL EXT-BOOL STRING NAT LIST{Name} LIST{Secret} LIST{SplitEntry} FULL-MAUDE .
-set trace eq on .
+***set trace eq on .
 ***rewrite in TEST : 
 ***    [x x' x'' y]
 ***        < put x x' x'' reveal a a'' if true . C, v(10) > y 
@@ -625,7 +633,7 @@ set trace eq on .
 ***    .
 
 rewrite in TEST :
-    [x]< A : after 2 : withdraw B, v > x 
+     < 0 > [x] < A : after 2 : withdraw B, v > x 
     | A[x |> A : after 2 : withdraw B] .
     
    
