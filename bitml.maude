@@ -103,24 +103,24 @@ fmod BITML-SYNTAX is
     
 
     op true : -> Predicate [ctor] .
-    op v(_) : Nat -> Value [ctor] .                                        *** v(0) v(1) ...
-    op x(_) : String -> Name [ctor] .                                      *** x("dep1") x("dep2") ...
-    op s(_) : String -> Secret [ctor] .                                    *** s("s1") c("s2") ...
-    op _~>_ : Value Contract -> SplitEntry [ctor prec 5 frozen] .          *** v' -> C
-    op <_,_> : Participant Value -> AnonDeposit [ctor prec 5 frozen] .     *** <A,v>
-    op <_,_> : Contract Value -> AnonContract [ctor prec 5 frozen] .       *** <C,v>
+    op v(_) : Nat -> Value [ctor format (d d b! o d)] .                                     *** v(0) v(1) ...
+    op x(_) : String -> Name [ctor format (d d g! o d)] .                                   *** x("dep1") x("dep2") ...
+    op s(_) : String -> Secret [ctor format (d d r! o d)] .                                 *** s("s1") c("s2") ...
+    op _~>_ : Value Contract -> SplitEntry [ctor prec 5 frozen format (ni d ++ --)] .       *** v' -> C
+    op <_,_> : Participant Value -> AnonDeposit [ctor prec 5 frozen format (d d d s d d)] . *** <A,v>
+    op <_,_> : Contract Value -> AnonContract [ctor prec 5 frozen format (d d d s d d)] .   *** <C,v>
 
     ***
     *** Contract 
     ***
-    op 0 : -> Contract [ctor] .                                                                             *** [contr.id]
-    op tau . _ : Contract -> Tau [ctor prec 25 frozen] .                                                    *** [contr.tau]
-    op put_reveal_if_._ : List{Name} List{Secret} Predicate Contract -> PutReveal [ctor prec 25 frozen] .   *** [contr.put-reveal]
-    op withdraw_ : Participant -> Withdraw [ctor prec 25 frozen] .                                          *** [contr.withdraw]
-    op _:_ : Set{Participant} GuardedContract -> AuthC [ctor prec 25 frozen] .                                   *** [contr.authorization]
-    op after_:_ : Nat GuardedContract -> After [ctor prec 25 frozen] .                                      *** [contr.after]
-    op split(_) : List{SplitEntry} -> Split [ctor prec 25 frozen] .                                         *** [contr.split]
-    op _+_ : GuardedContract GuardedContract -> GuardedContract [comm assoc ctor id: 0 frozen] .            *** [contr.sum]
+    op 0 : -> Contract [ctor] .                                                                                     *** [contr.id]
+    op tau . _ : Contract -> Tau [ctor prec 25 frozen] .                                                            *** [contr.tau]
+    op put_reveal_if_._ : List{Name} List{Secret} Predicate Contract -> PutReveal [ctor prec 25 frozen] .           *** [contr.put-reveal]
+    op withdraw_ : Participant -> Withdraw [ctor prec 25 frozen] .                                                  *** [contr.withdraw]
+    op _:_ : Set{Participant} GuardedContract -> AuthC [ctor prec 25 frozen] .                                      *** [contr.authorization]
+    op after_:_ : Nat GuardedContract -> After [ctor prec 25 frozen] .                                              *** [contr.after]
+    op split(_) : List{SplitEntry} -> Split [ctor prec 25 frozen format (d d ++i n--i d)] .                         *** [contr.split]
+    op _+_ : GuardedContract GuardedContract -> GuardedContract [comm assoc ctor id: 0 frozen format (d d d d)] .   *** [contr.sum]
 
     ***
     *** Contract Preconditions
@@ -134,14 +134,14 @@ fmod BITML-SYNTAX is
     ***
     *** Configurations
     ***
-    op 0 : -> Configuration [ctor] .                                                           *** [conf.id]
-    op {_}_ : ContractPrecondition Contract -> AdvContract [ctor prec 35 frozen] .             *** [conf.contract-advertised]
-    op __ : AnonContract Name -> ActContract [ctor prec 15 frozen] .                           *** [conf.active-contract]
-    op __ : AnonDeposit Name -> Deposit [ctor prec 15 frozen] .                                *** [conf.deposit]
-    op _[_] : Participant AuthAction -> Auth [ctor prec 35 frozen] .                           *** [conf.authorization]
-    op {_:_#_} : Participant Secret Nat -> ConfSec [ctor prec 35 frozen] .                     *** [conf.committed-secret]
-    op _:_#_ : Participant Secret Nat -> ConfRev [ctor prec 35 frozen] .                       *** [conf.revealed-secret]
-    op _|_ : Configuration Configuration -> Configuration [comm assoc ctor id: 0 frozen] .     *** [conf.parallel]
+    op 0 : -> Configuration [ctor] .                                                                            *** [conf.id]
+    op {_}_ : ContractPrecondition Contract -> AdvContract [ctor prec 35 frozen] .                              *** [conf.contract-advertised]
+    op __ : AnonContract Name -> ActContract [ctor prec 15 frozen format (d s d)] .                             *** [conf.active-contract]
+    op __ : AnonDeposit Name -> Deposit [ctor prec 15 frozen format (d s d)] .                                  *** [conf.deposit]
+    op _[_] : Participant AuthAction -> Auth [ctor prec 35 frozen] .                                            *** [conf.authorization]
+    op {_:_#_} : Participant Secret Nat -> ConfSec [ctor prec 35 frozen] .                                      *** [conf.committed-secret]
+    op _:_#_ : Participant Secret Nat -> ConfRev [ctor prec 35 frozen] .                                        *** [conf.revealed-secret]
+    op _|_ : Configuration Configuration -> Configuration [comm assoc ctor id: 0 frozen format (d ni d d) ] .   *** [conf.parallel]
 
     ***
     *** Authorization
@@ -336,7 +336,7 @@ fmod BITML-UTILS is
     
     
     ***
-    *** Take a list of split entries and names to creare a configuration of parallel contracts
+    *** Take a list of split entries and names to create a configuration of parallel contracts
     *** es. 
     ***     || (v ~> C v' ~> C' v'' ~> C'' ) (x x' x'') == <C,v> x | <C',v'> x' | <C'',v''> x''
     ***
@@ -357,15 +357,15 @@ fmod BITML-UTILS is
 
     ***
     ***
-    op ||___ : List{Participant} List{Value} List{Name} -> Configuration .
-    eq || (nil).List{Participant} (nil).List{Value} (nil).List{Name} = 0 .
-    ceq || (A A^) (v v^) (x x^) = < A, v > x | || A^ v^ x^ if size(A^) == size(v^) /\ size(v^) == size(x^) .
+***    op ||___ : List{Participant} List{Value} List{Name} -> Configuration .
+***    eq || (nil).List{Participant} (nil).List{Value} (nil).List{Name} = 0 .
+***    ceq || (A A^) (v v^) (x x^) = < A, v > x | || A^ v^ x^ if size(A^) == size(v^) /\ size(v^) == size(x^) .
     
     ***
     ***
-    op ||___ : List{Participant} List{Secret} List{Nat<} -> Configuration .
-    eq || (nil).List{Participant} (nil).List{Secret} (nil).List{Nat<} = 0 .
-    ceq || (A A^) (a a^) (N N^) = A : a # N | || A^ a^ N^ if size(A^) == size(a^) /\ size(a^) == size(N^) .
+***    op ||___ : List{Participant} List{Secret} List{Nat<} -> Configuration .
+***    eq || (nil).List{Participant} (nil).List{Secret} (nil).List{Nat<} = 0 .
+***    ceq || (A A^) (a a^) (N N^) = A : a # N | || A^ a^ N^ if size(A^) == size(a^) /\ size(a^) == size(N^) .
 
     ***
     ***
@@ -502,9 +502,9 @@ mod BITML-SEM is
     op split(_) : Name -> Label [ctor frozen] .
     op put(_,_,_) : List{Name} List{Secret} Name -> Label [ctor frozen] .
 
-    op [_]_ : List{Name} Configuration -> FConfiguration [ctor frozen] .
-    op <__>_ : Nat List{Nat<} FConfiguration -> TConfiguration [ctor frozen] .
-    op {_}_ : Label TConfiguration -> LConfiguration [ctor frozen] .
+    op [_]_ : List{Name} Configuration -> FConfiguration [ctor frozen format (ni d d nii d)] .
+    op <__>_ : Nat List{Nat<} FConfiguration -> TConfiguration [ctor frozen format (ni d d d d d)] .
+    op {_}_ : Label TConfiguration -> LConfiguration [ctor frozen format (++ni d d d d)] .
 
     *** cv(l) : get the name from a label l
     op cv(_) : Label -> Option .
@@ -569,13 +569,13 @@ mod BITML-SEM is
     crl [Delay] : < t t^ > [fv] S => {delta (t' + - t)} < t' tail(t^) > [fv] S 
                     if t^ =/= nil /\ t' := head(t^) .
 
-    crl [After] : < t t^ > [fv] < after t' : D + C, v > y | S => {l'} < t t^ > [fv'] S'
+    crl [After] : < t t^ > [fv] < after t' : D, v > y | S => {l'} < t t^ > [fv'] S'
                     if  [fv] < after t' : D, v > y | S => {l'} [fv'] S' /\
                         t >= t' /\
                         Some y == cv(l') .          *** withdraw/split/put-reveal
 
     crl [Timeout] : < t t^ > [fv] < D + C, v > y | S => {l'} < t t^ > [fv'] S'
-                    if  D =/= 0 /\ C =/= 0 /\
+                    if  D =/= 0 /\
                         [fv] < D, v > y | S => {l'} [fv'] S' /\
                         Some y == cv(l') .          *** withdraw/split/put-reveal
 
@@ -584,49 +584,6 @@ endm
 mod BITML is
     protecting BITML-SEM .
 endm
-
-mod ODDS-EVENS is
-    protecting BITML .
-    
-    ops A B : -> Participant [ctor] .    
-    ops a b : -> Secret .
-    op t : -> Nat .
-    op p : -> Predicate .  *** 0 ≤ |b | ≤ 1
-    op p1 : -> Predicate . *** |a|  =  |b|
-    op p2 : -> Predicate . *** |a| =/= |b|
-    op OddsEvens : -> Contract .
-    op OddsEvensAdv : -> AdvContract .
-    op a : -> Secret .
-    ops v v' v'' : -> Value .
-    ops x x' x'' y : -> Name .
-    op C : -> Contract .
-    
-    eq OddsEvens = split(
-        v(2) ~> ( reveal b if p . withdraw B + after t : withdraw A )
-        v(2) ~> ( reveal a . withdraw A + after t : withdraw B )
-        v(2) ~> ( reveal (a b) if p1 . withdraw A
-                + reveal (a b) if p2 . withdraw B ) ) .
-    
-    eq OddsEvensAdv = [x("x_0")] < OddsEvens, v(6) > x("x_0") .
-    
-    op ESsplit : -> AdvContract .
-    eq ESsplit = [x("x_0")] < split( v(1) ~> 0 v(2) ~> 0 ), v(3) > x("x_0") .
-
-    op ESreveal : -> AdvContract .
-    eq ESreveal = [x("x_0") x("x_1")] < reveal a . 0, v(3) > x("x_0") | B : a # 6 .
-
-    var txs : List{Name} .
-    var vs : List{Value} .
-    var As : List{Participant} .
-    op ESputReveal(_,_,_) : List{Name} List{Value} List{Participant} -> AdvContract .
-    eq ESputReveal(txs,vs,As) = 
-        [txs y] 
-        < put txs reveal a if true . 0, v(3) > y 
-        |   (|| As vs txs)
-        |   (|| B a 10) .
-
-endm
-
 
 mod TEST is 
     protecting BITML .
@@ -683,8 +640,17 @@ rewrite in TEST :
 ***	|   < A : after 10 : withdraw A + after 15 : withdraw B, v' > y
 ***   ) .
 
-rewrite in TEST : [x] < empty : after 5 : (withdraw B + withdraw A), v > x .
+rewrite in TEST : [x] < empty : after 5 : (withdraw B + withdraw A + withdraw A'), v > x .
 
 rewrite in TEST : < 0 (3 5) > [x] < after 5 : tau . after 3 : withdraw B , v > x .
+
+rewrite in TEST :
+    < 0 nil >
+    [x("x_0")]
+    < split(
+        v(2) ~> ( reveal b if p . withdraw B + after t : withdraw A )
+        v(2) ~> ( reveal a . withdraw A + after t : withdraw B )
+        v(2) ~> ( reveal (a b) if p' . withdraw A
+                + reveal (a b) if p'' . withdraw B ) ), v(6) > x("x_0") .
 
     
