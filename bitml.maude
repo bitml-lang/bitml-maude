@@ -579,16 +579,6 @@ mod BITML-SEM is
                         [fv] < D, v > y | S => {l'} [fv'] S' /\
                         Some y == cv(l') .          *** withdraw/split/put-reveal
 
-  
-***    op join(_,_) : Name Name -> Label [ctor frozen] .
-***    op divide(_,_,_) : Name Name Name -> Label [ctor frozen] .
-***    op donate(_,_) : Name Participant -> Label [ctor frozen] .
-***    rl [DEF-AUTHJOIN] :  < A , v > x | < A , v' > y | S => { A : x y } ( < A , v > x | < A , v' > y | A[ x y |> < A , v + v' > ] | S ) .
-***    crl [DEF-JOIN] :  < A , v > x | < A , v' > y | A[ x y |> < A , v + v' > ] | A[ y x |> < A , v + v' > ] | S => join(x,y) < A , v + v' > z | S if z := freshD(S) . 
-***    rl [DEF-AUTHDIVIDE] :  < A , v + v' > x | S => { A : x v v' } ( < A , v + v' > x | A[ x |> < A , v > < A , v' > ] | S ) .
-***    crl [DEF-DIVIDE] :  < A , v + v' > x | A[ x |> < A , v > < A , v' > ] | S  => divide(x,y,y') < A , v > y | < A , v' > y' | S if y := freshD(S) /\ y' := freshD(y,S) .
-***    rl [DEF-DONATE] :  < A , v > x | S => { A : x B } ( < A , v > x | A[ x |> B ] | S ) .
-***    crl [DEF-DONATE] :  < A , v > x | A[ x |> B ] | S  => donate(x,B) < B , v > y | S if y := freshD(S) .
 endm
 
 mod BITML is
