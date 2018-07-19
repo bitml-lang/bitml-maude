@@ -1,17 +1,47 @@
-fmod BITML-SORTS is   
+fmod BITML-SORTS is
     protecting NAT .
+    protecting INT .
+    protecting FLOAT .
     protecting STRING .
+    protecting CONVERSION .
     protecting EXT-BOOL .   *** for short-circuit operations _and-then_ _or-else_
 
     sort Participant .      *** A B
     sort Value .            *** v v'
     sort Name .             *** x x' y y'
     sort Secret .           *** s s'
-    sort Predicate .        *** p
     sort SplitEntry .       *** v -> C
     sort AnonDeposit .      *** <A,v>
     sort AnonContract .     *** <C,v>
-    
+
+    ***
+    *** Predicate
+    ***
+    sort Predicate .        *** p
+    sort True .             *** true
+    sort False .            *** false
+    sort And .              *** p && p
+    sort Or .               *** p || p
+    sort Not .              *** ! p
+    sort LT .               *** E < E
+    sort LET .              *** E <= E
+    sort GT .               *** E > E
+    sort GET .              *** E >= E
+    sort EQ .               *** E == E
+    sort NE .               *** E != E
+    subsorts True False And Or Not LT LET GT GET EQ NE < Predicate .
+
+    ***
+    *** Expression
+    ***
+    sort Expression .       *** E
+    sort Sum .              *** E + E
+    sort Minus .            *** E - E
+    sort Size .             *** |a|
+    sort Reference .        *** a
+    sort Constant .         *** N
+    subsort Sum Minus Size Reference Constant < Expression .
+
     ***
     *** Contract
     ***
@@ -100,15 +130,34 @@ fmod BITML-SYNTAX is
     protecting SET{Participant} .
     protecting SORTABLE-LIST{Nat<} .
     protecting LIST{Value} .
-    
 
-    op true : -> Predicate [ctor] .
     op v(_) : Nat -> Value [ctor format (d d b! o d)] .                                     *** v(0) v(1) ...
     op x(_) : String -> Name [ctor format (d d g! o d)] .                                   *** x("dep1") x("dep2") ...
     op s(_) : String -> Secret [ctor format (d d r! o d)] .                                 *** s("s1") c("s2") ...
     op _~>_ : Value Contract -> SplitEntry [ctor prec 5 frozen format (ni d ++ --)] .       *** v' -> C
     op <_,_> : Participant Value -> AnonDeposit [ctor prec 5 frozen format (d d d s d d)] . *** <A,v>
     op <_,_> : Contract Value -> AnonContract [ctor prec 5 frozen format (d d d s d d)] .   *** <C,v>
+
+    ***
+    *** Predicates/Expressions
+    ***
+    op true : -> True [ctor] .
+    op false : -> False [ctor] .
+    op _||_ : Predicate Predicate -> Or [ctor prec 25 frozen comm] .
+    op _&&_ : Predicate Predicate -> And [ctor prec 24 frozen comm] .
+    op !_ : Predicate -> Not [ctor prec 23 frozen] .
+    op _<_ : Expression Expression -> LT [ctor prec 22 frozen] .
+    op _<=_ : Expression Expression -> LET [ctor prec 22 frozen] .
+    op _>_ : Expression Expression -> GT [ctor prec 22 frozen] .
+    op _>=_ : Expression Expression -> GET [ctor prec 22 frozen] .
+    op _==_ : Expression Expression -> NE [ctor prec 22 frozen comm] .
+    op _!=_ : Expression Expression -> NE [ctor prec 22 frozen comm] .
+
+    op _+_ : Expression Expression -> Sum [ctor prec 21 frozen comm] .
+    op _-_ : Expression Expression -> Minus [ctor prec 21 frozen comm] .
+    op |_| : Expression -> Size [ctor prec 21 frozen] .
+    op ref(_) : Secret -> Size [ctor prec 21 frozen] .
+    op const(_) : Int -> Constant [ctor prec 21 frozen] .
 
     ***
     *** Contract 
@@ -165,11 +214,12 @@ fmod BITML-STREQ is
     var x^ : List{Name} .
     var a^ : List{Secret} .
     var C : Contract .
-    var p : Predicate .
+    var p p' : Predicate .
     vars A B : Participant .
     vars A^ B^ : Set{Participant} .
     var D : GuardedContract .
     vars t t' : Nat .
+    vars n m : Nat .
 
     op put_._ : List{Name} Contract -> PutReveal .
     op put_if_._ : List{Name} Predicate Contract -> PutReveal .
@@ -191,6 +241,22 @@ fmod BITML-STREQ is
     eq after t : after t' : D = after max(t,t') : D .
 
     eq after t : A : D = A : after t : D .
+
+    eq ! (true).True = (false).False .
+    eq ! (false).False = (true).True .
+    eq (true).True || p = (true).True .
+    eq (false).False && p = (false).False .
+    eq (false).False || p = p .
+    eq (true).True && p = p .
+    eq const(n) + const(m) = const(n + m) .
+    eq const(n) - const(m) = const(n + (- m)) .
+    eq const(n) < const(m) = if n < m then (true).True else (false).False fi .
+    eq const(n) <= const(m) = if n <= m then (true).True else (false).False fi .
+    eq const(n) > const(m) = if n > m then (true).True else (false).False fi .
+    eq const(n) >= const(m) = if n >= m then (true).True else (false).False fi .
+    eq const(n) == const(m) = if n == m then (true).True else (false).False fi .
+    eq const(n) != const(m) = if n =/= m then (true).True else (false).False fi .
+    eq | const(n) | = const( rat( ceiling( (log(float(n))) / (log(float(2))) / 7.0 ) ) ) .
     *** TODO: add more...
 endfm
 
@@ -285,7 +351,6 @@ endfm
 fmod BITML-UTILS is
 
     protecting BITML-STREQ .
-    protecting CONVERSION .
     
     var v : Value .
     var x y x' y' x'' y'' : Name .
@@ -631,13 +696,13 @@ endm
 ***    .
 
 rewrite in TEST :
-    < 0 2 > [x] < A : after 2 : withdraw B, v > x 
+    < 0 2 > [x] < A : after 2 : withdraw B, v > x
     | A[x |> A : after 2 : withdraw B] .
     
 ***reduce in TEST :
 ***    timelocks(
-***	    < after 5 : A : after 2 :  after 4 : withdraw A + after 1 : withdraw B, v > x 
-***	|   < A : after 10 : withdraw A + after 15 : withdraw B, v' > y
+***        < after 5 : A : after 2 :  after 4 : withdraw A + after 1 : withdraw B, v > x
+***    |   < A : after 10 : withdraw A + after 15 : withdraw B, v' > y
 ***   ) .
 
 rewrite in TEST : [x] < empty : after 5 : (withdraw B + withdraw A + withdraw A'), v > x .
