@@ -38,9 +38,9 @@ fmod BITML-SORTS is
     sort Sum .              *** E + E
     sort Minus .            *** E - E
     sort Size .             *** |a|
-    sort Reference .        *** a
+    sort SecretReference .  *** a
     sort Constant .         *** N
-    subsort Sum Minus Size Reference Constant < Expression .
+    subsort Sum Minus Size SecretReference Constant < Expression .
 
     ***
     *** Contract
@@ -219,7 +219,8 @@ fmod BITML-STREQ is
     vars A^ B^ : Set{Participant} .
     var D : GuardedContract .
     vars t t' : Nat .
-    vars n m : Nat .
+    vars n m n' m' : Nat .
+    vars E E' E'' : Expression .
 
     op put_._ : List{Name} Contract -> PutReveal .
     op put_if_._ : List{Name} Predicate Contract -> PutReveal .
@@ -257,6 +258,18 @@ fmod BITML-STREQ is
     eq const(n) == const(m) = if n == m then (true).True else (false).False fi .
     eq const(n) != const(m) = if n =/= m then (true).True else (false).False fi .
     eq | const(n) | = const( rat( ceiling( (log(float(n))) / (log(float(2))) / 7.0 ) ) ) .
+
+    op _<=_<=_ : Expression Expression Expression -> Predicate .
+    eq E <= E' <= E'' = E <= E' && E' <= E'' .   
+
+    op _<_<_ : Expression Expression Expression -> Predicate .
+    eq E < E' < E'' = E < E' && E' < E'' .   
+
+    op _<=_<_ : Expression Expression Expression -> Predicate .
+    eq E <= E' < E'' = E <= E' && E' < E'' .   
+
+    op _<_<=_ : Expression Expression Expression -> Predicate .
+    eq E < E' <= E'' = E < E' && E' <= E'' .   
     *** TODO: add more...
 endfm
 
@@ -302,7 +315,7 @@ fmod BITML-FREENAME is
     *** Contract 
     ***
     eq is x free in (0).Contract = false .                                                           *** [contr.id]
-    eq is x free in tau . C = false .                                                                *** [contr.tau]
+    eq is x free in tau . C = is x free in C .                                                       *** [contr.tau]
     eq is x free in put dL reveal sL if p . C = is x free in dL or-else is x free in C .             *** [contr.put-reveal]
     eq is x free in withdraw A = false .                                                             *** [contr.withdraw]
     eq is x free in A : D = is x free in D .                                                         *** [contr.authorization]
@@ -334,7 +347,6 @@ fmod BITML-FREENAME is
     eq is x free in A : s # n = false .                                                         *** [conf.revealed-secret]
     ceq is x free in S | S' = is x free in S or-else is x free in S' if S =/= 0 /\ S' =/= 0 .   *** [conf.parallel]
 
-
     ***
     *** Authorization
     ***
@@ -344,8 +356,59 @@ fmod BITML-FREENAME is
     eq is x free in (y z |> d) = x == y or x == z .                     *** [auth.join]
     eq is x free in (y |> d d') = x == y .                              *** [auth.divide]
     eq is x free in (y |> B) = x == y .                                 *** [auth.donate]
-    eq is x free in (dL n |> y) = is x free in dL .                     *** [auth.destroy]
+    eq is x free in (dL n |> y) = x == y or-else is x free in dL .      *** [auth.destroy]
 
+    op names in _ : ContractPrecondition -> List{Name} [memo] .
+    op names in _ : Contract -> List{Name} [memo] .
+    op names in _ : Configuration -> List{Name} [memo] .
+    op names in _ : AuthAction -> List{Name} [memo] .
+
+    ***
+    *** Contract 
+    ***
+    eq names in (0).Contract = nil .                                                       *** [contr.id]
+    eq names in (tau . C) = names in C .                                                   *** [contr.tau]
+    eq names in (put dL reveal sL if p . C) = dL (names in C) .                 *** [contr.put-reveal]
+    eq names in (withdraw A) = nil .                                                         *** [contr.withdraw]
+    eq names in (A : D) = names in D .                                                      *** [contr.authorization]
+    eq names in (after t : D) = names in D .                                                *** [contr.after]
+    eq names in (split( nil )) = nil .                                                       *** [contr.split]
+    eq names in (split( (v ~> C) sel )) = (names in C) (names in (split(sel))) .             *** [contr.split]
+    ceq names in (C + C') = (names in C) (names in C') if C =/= 0 /\ C' =/= 0 .    *** [contr.sum]
+
+
+    ***
+    *** Contract Preconditions
+    ***
+    eq names in (0).ContractPrecondition = nil .                                       *** [contr-pre.id]
+    eq names in (A ? v @ y) = y .                                                        *** [contr-pre.vol-deposit]
+    eq names in (A ! v @ y) = y .                                                        *** [contr-pre.perm-deposit]
+    eq names in (A secret s) = nil .                                                     *** [contr-pre.commit-secret]
+    ceq names in (cp | cp') = (names in cp) (names in cp') if cp =/= 0 /\ cp' =/= 0 .  *** [contr-pre.paral]
+
+
+    ***
+    *** Configurations
+    ***
+    eq names in (0).Configuration = nil .                                         *** [conf.id]
+    eq names in ({cp}C) = (names in cp) (names in C) .                            *** [conf.contract-advertised]
+    eq names in (< C , v > y) = y (names in C) .                                   *** [conf.active-contract]
+    eq names in (< A , v > y) = y .                                                 *** [conf.deposit]
+    eq names in (A[a]) = names in a .                                              *** [conf.authorization]
+    eq names in ({ A : s # n }) = nil .                                             *** [conf.committed-secret]
+    eq names in (A : s # n) = nil .                                                 *** [conf.revealed-secret]
+    ceq names in (S | S') = (names in S) (names in S') if S =/= 0 /\ S' =/= 0 .   *** [conf.parallel]
+
+    ***
+    *** Authorization
+    ***
+    eq names in (#|> advC) = (names in advC) .                     *** [auth.commit-secret]
+    eq names in (y |> advC) = y (names in advC) .   *** [auth.spend-deposit]
+    eq names in (y |> D) = y (names in D) .    *** [auth.take-branch]
+    eq names in (y z |> d) = y z .                 *** [auth.join]
+    eq names in (y |> d d') = y .             *** [auth.divide]
+    eq names in (y |> B) = y .                *** [auth.donate]
+    eq names in (dL n |> y) = y dL .       *** [auth.destroy]
 endfm
 
 fmod BITML-UTILS is
@@ -517,6 +580,10 @@ fmod BITML-UTILS is
     eq $timelocks(split(nil),n^) = n^ .
     eq $timelocks(split( (v ~> C) sel ), n^) = $timelocks(split(sel), n^) $timelocks(C, n^) .
     ceq $timelocks(C + C', n^) = $timelocks(C, n^) $timelocks(C', n^) if C =/= 0 /\ C' =/= 0 .
+
+    op occursL(_,_) : List{Name} List{Name} -> Bool .
+    eq occursL(x nil,y^) = occurs(x, y^) .
+    eq occursL(x x^, y^) = occurs(x, y^) and-then occursL(x^, y^) .
 endfm
 
 mod BITML-SEM is
@@ -596,7 +663,7 @@ mod BITML-SEM is
                     if  z := fresh(fv) /\ 
                         Some (S' S'') := (deposits x^ S) /\ *** S' are deposits in S, S'' == S \ S'
                         Some S''' := (secrets a^ S) /\
-                        p == true .
+                        p == (true).True .
 
     rl [C-AuthRev] : [fv] {A : a # N} | S => { A : a } [fv] (A : a # N | S) .
 
@@ -644,6 +711,43 @@ mod BITML-SEM is
                         [fv] < D, v > y | S => {l'} [fv'] S' /\
                         Some y == cv(l') .          *** withdraw/split/put-reveal
 
+endm
+
+mod BITML-PREDS is
+    protecting BITML-FREENAME .
+    protecting BITML-SEM .
+    protecting SATISFACTION .
+    subsort LConfiguration < State .
+
+    var A B A' B' A'' B'' : Participant .
+    var C C' : Contract .
+    var D D' : GuardedContract .
+    vars v v' v'' v''' : Value .
+    vars x y z x' y' z' x'' y'' z'' : Name .
+    vars x^ y^ : List{Name} .
+    vars a^ : List{Secret} .
+    vars v^ : List{Value} .
+    vars A^ B^ : Set{Participant} .
+    vars n^ N^ t^ t'^ : List{Nat<} .
+    vars S S' S'' S''' P P' : Configuration .
+    vars LConf : LConfiguration .
+    vars a a' : Secret .
+    vars n n' N t t' : Nat .
+    vars s s' : Secret .
+    vars s^ : List{Secret} .
+    vars l l' : Label .
+    vars fv fv' : List{Name} .
+    var splitEntries : List{SplitEntry} .
+    vars p p' : Predicate .
+    vars putDeps putSecs : Option .
+    
+    *** check that all free names in S are in [fv]
+    op fvAreTraced : -> Prop .
+
+    eq [fv] S |= fvAreTraced = occursL(fv, names in S) and-then occursL(names in S, fv) .
+    eq < t t^ > [fv] S |= fvAreTraced = [fv] S |= fvAreTraced .
+    eq {l} < t t^ > [fv] S |= fvAreTraced = [fv] S |= fvAreTraced .
+    eq LConf |= fvAreTraced = false [owise] .
 endm
 
 mod BITML is
@@ -707,15 +811,30 @@ rewrite in TEST :
 
 rewrite in TEST : [x] < empty : after 5 : (withdraw B + withdraw A + withdraw A'), v > x .
 
-rewrite in TEST : < 0 (3 5) > [x] < after 5 : tau . after 3 : withdraw B , v > x .
+rewrite in TEST : < 0 3 5 > [x] < after 5 : tau . after 3 : withdraw B , v > x .
 
 rewrite in TEST :
     < 0 nil >
     [x("x_0")]
     < split(
-        v(2) ~> ( reveal b if p . withdraw B + after t : withdraw A )
+        v(2) ~> ( reveal b if const(0) <= ref(b) <= const(1) . withdraw B + after t : withdraw A )
         v(2) ~> ( reveal a . withdraw A + after t : withdraw B )
-        v(2) ~> ( reveal (a b) if p' . withdraw A
-                + reveal (a b) if p'' . withdraw B ) ), v(6) > x("x_0") .
+        v(2) ~> ( reveal (a b) if | ref(a) | == | ref(b) | . withdraw A
+                + reveal (a b) if | ref(a) | != | ref(b) | . withdraw B ) ), v(6) > x("x_0") .
 
+*** true
+rewrite in BITML-PREDS : [x] < after 5 : tau . after 3 : withdraw B , v > x |= fvAreTraced .
+*** false
+rewrite in BITML-PREDS : [y x] < after 5 : tau . after 3 : withdraw B , v > x |= fvAreTraced .
+*** false
+rewrite in BITML-PREDS : [x] < after 5 : tau . after 3 : withdraw B , v > y | < after 5 : tau . after 3 : withdraw B , v > x |= fvAreTraced .
+
+*** false
+rewrite in BITML-PREDS :
+    {init}
+    < 0 3 5 > 
+    [x y] 
+      < after 5 : tau . after 3 : withdraw B , v > y 
+    | < after 5 : tau . after 3 : withdraw A , v > x 
     
+    |= fvAreTraced .
