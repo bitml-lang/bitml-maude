@@ -201,7 +201,7 @@ fmod BITML-SYNTAX is
     op __|>_ : Name Name AnonDeposit -> Join [ctor frozen] .            *** [auth.join]
     op _|>__ : Name AnonDeposit AnonDeposit -> Divide [ctor frozen] .   *** [auth.divide]
     op _|>_ : Name Participant -> Donate [ctor frozen] .                *** [auth.donate]
-    op __|>_ : List{Name} Nat Name -> Donate [ctor frozen] .            *** [auth.destroy]
+    op _|>_ : Name Name -> Destroy [ctor frozen] .                      *** [auth.destroy]
 endfm
 
 
@@ -356,7 +356,7 @@ fmod BITML-FREENAME is
     eq is x free in (y z |> d) = x == y or x == z .                     *** [auth.join]
     eq is x free in (y |> d d') = x == y .                              *** [auth.divide]
     eq is x free in (y |> B) = x == y .                                 *** [auth.donate]
-    eq is x free in (dL n |> y) = x == y or-else is x free in dL .      *** [auth.destroy]
+    eq is x free in (y |> z) = x == y or-else x == z .                  *** [auth.destroy]
 
     op names in _ : ContractPrecondition -> List{Name} [memo] .
     op names in _ : Contract -> List{Name} [memo] .
@@ -366,49 +366,49 @@ fmod BITML-FREENAME is
     ***
     *** Contract 
     ***
-    eq names in (0).Contract = nil .                                                       *** [contr.id]
-    eq names in (tau . C) = names in C .                                                   *** [contr.tau]
-    eq names in (put dL reveal sL if p . C) = dL (names in C) .                 *** [contr.put-reveal]
-    eq names in (withdraw A) = nil .                                                         *** [contr.withdraw]
-    eq names in (A : D) = names in D .                                                      *** [contr.authorization]
-    eq names in (after t : D) = names in D .                                                *** [contr.after]
-    eq names in (split( nil )) = nil .                                                       *** [contr.split]
-    eq names in (split( (v ~> C) sel )) = (names in C) (names in (split(sel))) .             *** [contr.split]
-    ceq names in (C + C') = (names in C) (names in C') if C =/= 0 /\ C' =/= 0 .    *** [contr.sum]
+    eq names in (0).Contract = nil .                                                *** [contr.id]
+    eq names in (tau . C) = names in C .                                            *** [contr.tau]
+    eq names in (put dL reveal sL if p . C) = dL (names in C) .                     *** [contr.put-reveal]
+    eq names in (withdraw A) = nil .                                                *** [contr.withdraw]
+    eq names in (A : D) = names in D .                                              *** [contr.authorization]
+    eq names in (after t : D) = names in D .                                        *** [contr.after]
+    eq names in (split( nil )) = nil .                                              *** [contr.split]
+    eq names in (split( (v ~> C) sel )) = (names in C) (names in (split(sel))) .    *** [contr.split]
+    ceq names in (C + C') = (names in C) (names in C') if C =/= 0 /\ C' =/= 0 .     *** [contr.sum]
 
 
     ***
     *** Contract Preconditions
     ***
-    eq names in (0).ContractPrecondition = nil .                                       *** [contr-pre.id]
-    eq names in (A ? v @ y) = y .                                                        *** [contr-pre.vol-deposit]
-    eq names in (A ! v @ y) = y .                                                        *** [contr-pre.perm-deposit]
-    eq names in (A secret s) = nil .                                                     *** [contr-pre.commit-secret]
-    ceq names in (cp | cp') = (names in cp) (names in cp') if cp =/= 0 /\ cp' =/= 0 .  *** [contr-pre.paral]
+    eq names in (0).ContractPrecondition = nil .                                        *** [contr-pre.id]
+    eq names in (A ? v @ y) = y .                                                       *** [contr-pre.vol-deposit]
+    eq names in (A ! v @ y) = y .                                                       *** [contr-pre.perm-deposit]
+    eq names in (A secret s) = nil .                                                    *** [contr-pre.commit-secret]
+    ceq names in (cp | cp') = (names in cp) (names in cp') if cp =/= 0 /\ cp' =/= 0 .   *** [contr-pre.paral]
 
 
     ***
     *** Configurations
     ***
-    eq names in (0).Configuration = nil .                                         *** [conf.id]
-    eq names in ({cp}C) = (names in cp) (names in C) .                            *** [conf.contract-advertised]
-    eq names in (< C , v > y) = y (names in C) .                                   *** [conf.active-contract]
-    eq names in (< A , v > y) = y .                                                 *** [conf.deposit]
-    eq names in (A[a]) = names in a .                                              *** [conf.authorization]
-    eq names in ({ A : s # n }) = nil .                                             *** [conf.committed-secret]
-    eq names in (A : s # n) = nil .                                                 *** [conf.revealed-secret]
-    ceq names in (S | S') = (names in S) (names in S') if S =/= 0 /\ S' =/= 0 .   *** [conf.parallel]
+    eq names in (0).Configuration = nil .                                       *** [conf.id]
+    eq names in ({cp}C) = (names in cp) (names in C) .                          *** [conf.contract-advertised]
+    eq names in (< C , v > y) = y (names in C) .                                *** [conf.active-contract]
+    eq names in (< A , v > y) = y .                                             *** [conf.deposit]
+    eq names in (A[a]) = names in a .                                           *** [conf.authorization]
+    eq names in ({ A : s # n }) = nil .                                         *** [conf.committed-secret]
+    eq names in (A : s # n) = nil .                                             *** [conf.revealed-secret]
+    ceq names in (S | S') = (names in S) (names in S') if S =/= 0 /\ S' =/= 0 . *** [conf.parallel]
 
     ***
     *** Authorization
     ***
-    eq names in (#|> advC) = (names in advC) .                     *** [auth.commit-secret]
+    eq names in (#|> advC) = (names in advC) .      *** [auth.commit-secret]
     eq names in (y |> advC) = y (names in advC) .   *** [auth.spend-deposit]
-    eq names in (y |> D) = y (names in D) .    *** [auth.take-branch]
-    eq names in (y z |> d) = y z .                 *** [auth.join]
-    eq names in (y |> d d') = y .             *** [auth.divide]
-    eq names in (y |> B) = y .                *** [auth.donate]
-    eq names in (dL n |> y) = y dL .       *** [auth.destroy]
+    eq names in (y |> D) = y (names in D) .         *** [auth.take-branch]
+    eq names in (y z |> d) = y z .                  *** [auth.join]
+    eq names in (y |> d d') = y .                   *** [auth.divide]
+    eq names in (y |> B) = y .                      *** [auth.donate]
+    eq names in (x |> y) = x y .                    *** [auth.destroy]
 endfm
 
 fmod BITML-UTILS is
@@ -535,25 +535,35 @@ fmod BITML-UTILS is
     *** or None if some secret is not found.
     ***
     op secrets__ : List{Secret} Configuration -> Option .
-    eq secrets a^ S = secretsTR a^ S 0 .
-    op secretsTR___ : List{Secret} Configuration Configuration -> Option .
-    eq secretsTR nil S accConf = Some accConf .    *** base case
-    eq secretsTR (a a^) ((A : a # N) | S) accConf = secretsTR a^ S (accConf | A : a # N) .
-    eq secretsTR a^ S accConf = None [owise].
+    eq secrets a^ S = $secrets a^ S 0 .
+    op $secrets___ : List{Secret} Configuration Configuration -> Option .
+    eq $secrets nil S accConf = Some accConf .    *** base case
+    eq $secrets (a a^) ((A : a # N) | S) accConf = $secrets a^ S (accConf | A : a # N) .
+    eq $secrets a^ S accConf = None [owise].
 
 
     ***
     *** Given a set of participants A^ and a guarded contract D,
     *** search for all A [ y |> D ] within a configuration S.
-    *** Return a Some(S' R) with S' == all the authorization A [ y |> D ]
+    *** Return a Some(S' R) with S' == all the authorization A [ y |> D ] and R == S \ S'
     *** or None if some authorization is not found.
     ***
     op searchAuth____ : Set{Participant} GuardedContract Name Configuration -> Option .
-    eq searchAuth A^ D y S = searchAuthTR A^ D y S 0 .
-    op searchAuthTR_____ : Set{Participant} GuardedContract Name Configuration Configuration -> Option .
-    eq searchAuthTR empty D y S accConf = Some (accConf S) .    *** base case
-    eq searchAuthTR (A, A^) D y (A [ y |> D ] | S) accConf = searchAuthTR A^ D y S (accConf | A [ y |> D ]) .
-    eq searchAuthTR A^ D y S accConf = None [owise] .
+    eq searchAuth A^ D y S = $searchAuth A^ D y S 0 .
+    op $searchAuth_____ : Set{Participant} GuardedContract Name Configuration Configuration -> Option .
+    eq $searchAuth empty D y S accConf = Some (accConf S) .    *** base case
+    eq $searchAuth (A, A^) D y (A [ y |> D ] | S) accConf = $searchAuth A^ D y S (accConf | A [ y |> D ]) .
+    eq $searchAuth A^ D y S accConf = None [owise] .
+
+    ***
+    *** Given a participant A and a deposit name,
+    *** search for destroy authorization A [ x |> y ] within a configuration S.
+    *** Return a Some(S' R) with S' == the authorization A [ x |> y ] and R == S \ S'
+    *** or None if the authorization is not found.
+    ***
+    op searchAuthDestroy___ : Participant Name Configuration -> Option .
+    eq searchAuthDestroy A x (A [ x |> y ] | S) = Some ((A [ x |> y ]) S) .
+    eq searchAuthDestroy A x S = None [owise] .
 
     ***
     *** Return a ordered list of absolute times
@@ -623,15 +633,17 @@ mod BITML-SEM is
     
     *** Labels
     op init : -> Label [ctor] .
-    op _:__ : Participant Name Name -> Label [ctor frozen] .
+    op _:__ : Participant Name Name -> Label [ctor frozen] .            *** auth.join
     op _:___ : Participant Name Value Value -> Label [ctor frozen] .
-    op _:__ : Participant Name Participant  -> Label [ctor frozen] .
+    op _:__ : Participant Name Participant -> Label [ctor frozen] .
+    op _:_ : Participant Name -> Label [ctor frozen] .                  *** auth.destroy
     op _:_ : Participant Secret  -> Label [ctor frozen] .
     op _:_,_ : Participant Name Contract  -> Label [ctor frozen] .
     op tau(_) : Contract -> Label [ctor frozen] .
     op delta_ : Nat -> Label [ctor frozen] .
     op withdraw(_,_,_) : Participant Value Name -> Label [ctor frozen] .
     op split(_) : Name -> Label [ctor frozen] .
+    op destroy(_) : Name -> Label [ctor frozen] .
     op put(_,_,_) : List{Name} List{Secret} Name -> Label [ctor frozen] .
 
     op [_]_ : List{Name} Configuration -> FConfiguration [ctor frozen format (ni d d nii d)] .
@@ -661,14 +673,21 @@ mod BITML-SEM is
     ***
     *** [fv] S => {l} [fv'] S'    
     ***
+    crl [Dep-AuthDestroy] : [fv] < A , v > x | S => { A : x } [fv y] < A , v > x | A [ x |> y ] | S
+                    if  y := fresh(fv) /\
+                        None := (searchAuthDestroy A x S) .  *** check that A has not authorized to destroy x
+
+    crl [Dep-Destroy] : [fv] < A , v > x | A [ x |> y ] | S => { destroy(x) } [fv] S
+                    if y := fresh(fv) .
+
     crl [C-Split] : [fv] < (split (splitEntries) ), v > y | S => { split(y) } [fv fv'] ((|| splitEntries fv') | S ) 
                     if fv' := fresh(fv,size(splitEntries)) .
 
     crl [C-PutReveal] : [fv] (< (put (x^) reveal a^ if p . C), v > y | S) => 
                     { put(x^,a^,y) } [fv z] ( < C, v > z | S'')
                     if  z := fresh(fv) /\ 
-                        Some (S' S'') := (deposits x^ S) /\ *** S' are deposits in S, S'' == S \ S'
-                        Some S''' := (secrets a^ S) /\
+                        Some (S' S'') := (deposits x^ S) /\ *** fetch all deposits x^ in S (S' are deposits in S, S'' == S \ S')
+                        Some S''' := (secrets a^ S) /\      *** fetch all secrets a^ in S
                         p == (true).True .
 
     rl [C-AuthRev] : [fv] {A : a # N} | S => { A : a } [fv] (A : a # N | S) .
@@ -677,7 +696,7 @@ mod BITML-SEM is
                     if  z := fresh(fv) .
     
     crl [C-AuthControl] : [fv] < (A, A^) : D + C, v > y | S => { A : y, D } [fv] (< (A, A^) : D + C, v > y | A [ y |> (A, A^) : D ] | S)
-                    if  None := (searchAuth A ((A, A^) : D) y S) .
+                    if  None := (searchAuth A ((A, A^) : D) y S) .  *** check that branch D is not already authorized by A
 
     crl [C-Control] : [fv] < A^ : D, v > y | S => {l'} [fv'] S'
                     if  Some (S'' S''') := (searchAuth A^ (A^ : D) y S) /\    *** S'' are authorizations, S''' S \ S''
