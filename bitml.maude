@@ -645,9 +645,15 @@ mod BITML-SEM is
     eq cv(put(x^,a^,y)) = Some y .
     eq cv(l) = None [owise].
 
-    
+    *** Allow progression of configuration
+    crl [Rifl] : S => {l'} < t' t'^ > [fv'] S'
+        if  fv := (names in S) /\
+            l := init /\
+            t := 0 /\ t^ := timelocks(S) /\
+            {l} < t t^ > [fv] S => {l'} < t' t'^ > [fv'] S' .
+
     *** Allow progression of labelled configuration
-    crl [Rifl] : {l} [fv] S => [fv'] S' if [fv] S => {l'} [fv'] S' .
+    crl [RiflL] : {l} [fv] S => [fv'] S' if [fv] S => {l'} [fv'] S' .
 
     *** Allow progression of timed labelled configuration
     crl [RiflT] : {l} < t t^ > [fv] S => < t' t'^ > [fv'] S' if < t t^ > [fv] S => {l'} < t' t'^ > [fv'] S' .
