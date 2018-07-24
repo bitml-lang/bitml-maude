@@ -459,7 +459,7 @@ fmod BITML-UTILS is
     ***
     *** convert natural to string (use CONVERSION module)
     ***
-    op string(_) : Nat -> String .
+    op string(_) : Nat -> String [memo] .
     eq string(n) = string(n,10) .
     
     
@@ -468,18 +468,18 @@ fmod BITML-UTILS is
     *** es. 
     ***     || (v ~> C v' ~> C' v'' ~> C'' ) (x x' x'') == <C,v> x | <C',v'> x' | <C'',v''> x''
     ***
-    op ||__ : List{SplitEntry} List{Name} -> Configuration .
+    op ||__ : List{SplitEntry} List{Name} -> Configuration [memo] .
     eq || (v ~> C nil) (x nil) = < C, v > x .
     ceq || (v ~> C tail) (x tail2) = < C, v > x | ||(tail)(tail2) if size(tail) == size(tail2) .
     
     *** Sum for values
-    op _+_ : Value Value -> Value .
+    op _+_ : Value Value -> Value [memo] .
     eq v(n) + v(n') = v (n + n') .
     
     ***
     *** Return the total amount value of a list of split entries
     ***
-    op value(_) : List{SplitEntry} -> Value .
+    op value(_) : List{SplitEntry} -> Value [memo] .
     eq value(nil) = v(0) .
     eq value(v ~> C tail) = v + value(tail) .
 
@@ -497,7 +497,7 @@ fmod BITML-UTILS is
 
     ***
     ***
-    op listOccurs(_,_) : List{Name} List{Name} -> Bool .
+    op listOccurs(_,_) : List{Name} List{Name} -> Bool [memo] .
     eq listOccurs(nil,y^) = true .
     eq listOccurs((x x^),y^) = occurs(x,y^) and-then listOccurs(x^,y^) . 
     
@@ -522,9 +522,9 @@ fmod BITML-UTILS is
     *** Return a Some(D R) with D == all deposits in S and R == S \ D,
     *** or None if some deposit is not found.
     ***
-    op deposits__ : List{Name} Configuration -> Option .
+    op deposits__ : List{Name} Configuration -> Option [memo] .
     eq deposits x^ S = depositsTR x^ S 0 .
-    op depositsTR___ : List{Name} Configuration Configuration -> Option .
+    op depositsTR___ : List{Name} Configuration Configuration -> Option [memo] .
     eq depositsTR nil S accConf = Some (accConf S) .    *** base case
     eq depositsTR (x x^) ((< A , v > x) | S) accConf = depositsTR x^ S (accConf | < A , v > x) .
     eq depositsTR x^ S accConf = None [owise].
@@ -534,9 +534,9 @@ fmod BITML-UTILS is
     *** Return a Some(S') with S' == all secrets in S,
     *** or None if some secret is not found.
     ***
-    op secrets__ : List{Secret} Configuration -> Option .
+    op secrets__ : List{Secret} Configuration -> Option [memo] .
     eq secrets a^ S = $secrets a^ S 0 .
-    op $secrets___ : List{Secret} Configuration Configuration -> Option .
+    op $secrets___ : List{Secret} Configuration Configuration -> Option [memo] .
     eq $secrets nil S accConf = Some accConf .    *** base case
     eq $secrets (a a^) ((A : a # N) | S) accConf = $secrets a^ S (accConf | A : a # N) .
     eq $secrets a^ S accConf = None [owise].
@@ -548,9 +548,9 @@ fmod BITML-UTILS is
     *** Return a Some(S' R) with S' == all the authorization A [ y |> D ] and R == S \ S'
     *** or None if some authorization is not found.
     ***
-    op searchAuth____ : Set{Participant} GuardedContract Name Configuration -> Option .
+    op searchAuth____ : Set{Participant} GuardedContract Name Configuration -> Option [memo] .
     eq searchAuth A^ D y S = $searchAuth A^ D y S 0 .
-    op $searchAuth_____ : Set{Participant} GuardedContract Name Configuration Configuration -> Option .
+    op $searchAuth_____ : Set{Participant} GuardedContract Name Configuration Configuration -> Option [memo] .
     eq $searchAuth empty D y S accConf = Some (accConf S) .    *** base case
     eq $searchAuth (A, A^) D y (A [ y |> D ] | S) accConf = $searchAuth A^ D y S (accConf | A [ y |> D ]) .
     eq $searchAuth A^ D y S accConf = None [owise] .
@@ -561,26 +561,26 @@ fmod BITML-UTILS is
     *** Return a Some(S' R) with S' == the authorization A [ x |> y ] and R == S \ S'
     *** or None if the authorization is not found.
     ***
-    op searchAuthDestroy___ : Participant Name Configuration -> Option .
+    op searchAuthDestroy___ : Participant Name Configuration -> Option [memo] .
     eq searchAuthDestroy A x (A [ x |> y ] | S) = Some ((A [ x |> y ]) S) .
     eq searchAuthDestroy A x S = None [owise] .
 
     ***
     *** Return a ordered list of absolute times
     ***
-    op timelocks : Configuration -> List{Nat<} .
+    op timelocks : Configuration -> List{Nat<} [memo] .
     eq timelocks(S) = sort ($timelocks(S, nil)) .
     
-    op $timelocks : Configuration List{Nat<} -> List{Nat<} .    
+    op $timelocks : Configuration List{Nat<} -> List{Nat<} [memo] .    
     eq $timelocks((0).Configuration, n^) = n^ .
     eq $timelocks(< C, v > x, n^) = $timelocks(C, n^) .
     ceq $timelocks(S | S', n^) = $timelocks(S, n^) $timelocks(S', n^) if S =/= 0 /\ S' =/= 0 .
     eq $timelocks(S, n^) = n^ [owise] .
     
-    op timelocks : Contract -> List{Nat<} .
+    op timelocks : Contract -> List{Nat<} [memo] .
     eq timelocks(C) = sort ($timelocks(C, nil)) .
     
-    op $timelocks : Contract List{Nat<} -> List{Nat<} .    
+    op $timelocks : Contract List{Nat<} -> List{Nat<} [memo] .    
     eq $timelocks((0).Contract, n^) = n^ .
     eq $timelocks(tau . C, n^) = $timelocks(C, n^) .
     eq $timelocks(put x^ reveal a^ if p . C, n^) = $timelocks(C, n^) .
@@ -591,7 +591,7 @@ fmod BITML-UTILS is
     eq $timelocks(split( (v ~> C) sel ), n^) = $timelocks(split(sel), n^) $timelocks(C, n^) .
     ceq $timelocks(C + C', n^) = $timelocks(C, n^) $timelocks(C', n^) if C =/= 0 /\ C' =/= 0 .
 
-    op occursL(_,_) : List{Name} List{Name} -> Bool .
+    op occursL(_,_) : List{Name} List{Name} -> Bool [memo] .
     eq occursL(x nil,y^) = occurs(x, y^) .
     eq occursL(x x^, y^) = occurs(x, y^) and-then occursL(x^, y^) .
 endfm
@@ -632,7 +632,6 @@ mod BITML-SEM is
     subsorts Configuration < FConfiguration < TConfiguration < LConfiguration .
     
     *** Labels
-    op init : -> Label [ctor] .
     op _:__ : Participant Name Name -> Label [ctor frozen] .            *** auth.join
     op _:___ : Participant Name Value Value -> Label [ctor frozen] .
     op _:__ : Participant Name Participant -> Label [ctor frozen] .
@@ -658,17 +657,15 @@ mod BITML-SEM is
     eq cv(l) = None [owise].
 
     *** Allow progression of configuration
-    crl [Rifl] : S => {l'} < t' t'^ > [fv'] S'
-        if  fv := (names in S) /\
-            l := init /\
-            t := 0 /\ t^ := timelocks(S) /\
-            {l} < t t^ > [fv] S => {l'} < t' t'^ > [fv'] S' .
+    crl [Rifl] : S => < t t^ > [fv] S if  fv := (names in S) /\ t := 0 /\ t^ := timelocks(S) .
 
     *** Allow progression of labelled configuration
-    crl [RiflL] : {l} [fv] S => [fv'] S' if [fv] S => {l'} [fv'] S' .
+***    crl [RiflL] : {l} [fv] S => [fv'] S' if [fv] S => {l'} [fv'] S' .
+    rl [RiflL] : {l} [fv] S => [fv] S .
 
     *** Allow progression of timed labelled configuration
-    crl [RiflT] : {l} < t t^ > [fv] S => < t' t'^ > [fv'] S' if < t t^ > [fv] S => {l'} < t' t'^ > [fv'] S' .
+***    crl [RiflT] : {l} < t t^ > [fv] S => < t' t'^ > [fv'] S' if < t t^ > [fv] S => {l'} < t' t'^ > [fv'] S' .
+    rl [RiflT] : {l} < t t^ > [fv] S => < t t^ > [fv] S .
 
     ***
     *** [fv] S => {l} [fv'] S'    
@@ -677,8 +674,7 @@ mod BITML-SEM is
                     if  y := fresh(fv) /\
                         None := (searchAuthDestroy A x S) .  *** check that A has not authorized to destroy x
 
-    crl [Dep-Destroy] : [fv] < A , v > x | A [ x |> y ] | S => { destroy(x) } [fv] S
-                    if y := fresh(fv) .
+    rl [Dep-Destroy] : [fv] < A , v > x | A [ x |> y ] | S => { destroy(x) } [fv] S .
 
     crl [C-Split] : [fv] < (split (splitEntries) ), v > y | S => { split(y) } [fv fv'] ((|| splitEntries fv') | S ) 
                     if fv' := fresh(fv,size(splitEntries)) .
@@ -755,7 +751,8 @@ mod BITML-PREDS is
     vars A^ B^ : Set{Participant} .
     vars n^ N^ t^ t'^ : List{Nat<} .
     vars S S' S'' S''' P P' : Configuration .
-    vars LConf : LConfiguration .
+    var TConf : TConfiguration .
+    var LConf : LConfiguration .
     vars a a' : Secret .
     vars n n' N t t' : Nat .
     vars s s' : Secret .
@@ -768,11 +765,27 @@ mod BITML-PREDS is
     
     *** check that all free names in S are in [fv]
     op fvAreTraced : -> Prop .
-
     eq [fv] S |= fvAreTraced = occursL(fv, names in S) and-then occursL(names in S, fv) .
-    eq < t t^ > [fv] S |= fvAreTraced = [fv] S |= fvAreTraced .
-    eq {l} < t t^ > [fv] S |= fvAreTraced = [fv] S |= fvAreTraced .
-    eq LConf |= fvAreTraced = false [owise] .
+    eq < t t^ > [fv] S |= fvAreTraced = occursL(fv, names in S) and-then occursL(names in S, fv) .
+    eq TConf |= fvAreTraced = false [owise] .
+
+    op emptySum : -> Prop .
+    eq [fv] < (0).Contract, v > x | S |= emptySum = true .
+    eq < t t^ > [fv] < (0).Contract, v > x | S |= emptySum = true .
+    eq TConf |= emptySum = false [owise] .
+
+    op zeroValue : -> Prop .
+    eq {l} [fv] (< A, v(0) > x | S) |= zeroValue = true .
+    eq {l} < t t^ > [fv] (< C, v(0) > x | S) |= zeroValue = true .
+    eq [fv] (< A, v(0) > x | S) |= zeroValue = true .
+    eq < t t^ > [fv] (< C, v(0) > x | S) |= zeroValue = true .
+    eq LConf |= zeroValue = false [owise] .
+endm
+
+mod BITML-CHECK is
+    protecting BITML-PREDS .
+    including MODEL-CHECKER .
+    including LTL-SIMPLIFIER .
 endm
 
 mod BITML is
@@ -780,7 +793,7 @@ mod BITML is
 endm
 
 mod TEST is 
-    protecting BITML .
+    protecting BITML-CHECK .
     ops A B A' B' : -> Participant .
     ops x x' x'' : -> Name .
     ops y y' y'' : -> Name .
@@ -802,11 +815,11 @@ mod TEST is
     vars xx^ : List{Name} .
 endm
 
-***set trace on .
-
-***trace exclude BOOL EXT-BOOL STRING NAT LIST{Name} LIST{Secret} LIST{SplitEntry} FULL-MAUDE .
-
-***set trace eq on .
+***(
+set trace on .
+set trace eq off .
+set trace substitution off .
+)
 
 ***rewrite in TEST : 
 ***    [x x' x'' y]
@@ -856,10 +869,58 @@ rewrite in BITML-PREDS : [x] < after 5 : tau . after 3 : withdraw B , v > y | < 
 
 *** false
 rewrite in BITML-PREDS :
-    {init}
-    < 0 3 5 > 
-    [x y] 
       < after 5 : tau . after 3 : withdraw B , v > y 
     | < after 5 : tau . after 3 : withdraw A , v > x 
     
     |= fvAreTraced .
+
+*** true
+rewrite in TEST :
+    < withdraw A, v(2) > x("x_0")
+    | < withdraw B, v(0) > x("x_1")
+    | < withdraw A', v(4) > x("x_2") |= zeroValue .
+
+*** true
+reduce in TEST :
+    modelCheck(
+        < withdraw A, v(2) > x("x_0")
+        | < withdraw B, v(0) > x("x_1")
+        | < withdraw A', v(4) > x("x_2") ,
+    [] <> zeroValue ) .
+
+*** false
+reduce in TEST :
+    < split(
+        v(2) ~> (withdraw A)
+        v(0) ~> (withdraw B)
+        v(4) ~> (withdraw A')
+    ) , v(6) > x |= zeroValue .
+
+*** true
+reduce in TEST :
+    modelCheck(
+        < split(
+            v(2) ~> (withdraw A)
+            v(0) ~> (withdraw B)
+            v(4) ~> (withdraw A')
+        ) , v(6) > x ,
+    <> zeroValue ) .
+
+
+*** true -> ERRORE: da false
+reduce in TEST :
+          < 0 nil > 
+		  [x x("x_0") x("x_1") x("x_2") x("x_3") x("x_4")]
+		    < withdraw A, v(2) > x("x_0")
+		  | < withdraw A', v(4) > x("x_2")
+		  | < B, v(0) > x("x_3")
+		  | B[x("x_3") |> x("x_4")] |= zeroValue .
+
+reduce in TEST :
+  < 0 nil > 
+  [x x("x_0") x("x_1") x("x_2") x("x_3") x("x_4")]
+    < withdraw B, v(0) > x("x_1")
+  | < withdraw A', v(4) > x("x_2")
+  | < A, v(2) > x("x_3")
+  | A[x("x_3") |> x("x_4")] |= zeroValue .
+
