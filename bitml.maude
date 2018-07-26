@@ -660,11 +660,9 @@ mod BITML-SEM is
     crl [Rifl] : S => < t t^ > [fv] S if  fv := (names in S) /\ t := 0 /\ t^ := timelocks(S) .
 
     *** Allow progression of labelled configuration
-***    crl [RiflL] : {l} [fv] S => [fv'] S' if [fv] S => {l'} [fv'] S' .
     rl [RiflL] : {l} [fv] S => [fv] S .
 
     *** Allow progression of timed labelled configuration
-***    crl [RiflT] : {l} < t t^ > [fv] S => < t' t'^ > [fv'] S' if < t t^ > [fv] S => {l'} < t' t'^ > [fv'] S' .
     rl [RiflT] : {l} < t t^ > [fv] S => < t t^ > [fv] S .
 
     ***
@@ -765,20 +763,39 @@ mod BITML-PREDS is
     
     *** check that all free names in S are in [fv]
     op fvAreTraced : -> Prop .
+    eq S |= fvAreTraced = [(names in S)] S |= fvAreTraced .
     eq [fv] S |= fvAreTraced = occursL(fv, names in S) and-then occursL(names in S, fv) .
-    eq < t t^ > [fv] S |= fvAreTraced = occursL(fv, names in S) and-then occursL(names in S, fv) .
-    eq TConf |= fvAreTraced = false [owise] .
+    eq < t t^ > [fv] S |= fvAreTraced = [fv] S |= fvAreTraced .
+    eq {l} [fv] S |= fvAreTraced = [fv] S |= fvAreTraced .
+    eq {l} < t t^ > [fv] S |= fvAreTraced = [fv] S |= fvAreTraced .
+    ceq [fv] S | S' |= fvAreTraced = [fv] S |= fvAreTraced or-else [fv] S' |= fvAreTraced if S =/= 0 /\ S' =/= 0 .
+    eq < t t^ > [fv] S | S' |= fvAreTraced = S | S' |= fvAreTraced .
+    eq {l} < t t^ > [fv] S | S' |= fvAreTraced = S | S' |= fvAreTraced .
+    eq LConf |= fvAreTraced = false [owise] .
 
     op emptySum : -> Prop .
-    eq [fv] < (0).Contract, v > x | S |= emptySum = true .
-    eq < t t^ > [fv] < (0).Contract, v > x | S |= emptySum = true .
-    eq TConf |= emptySum = false [owise] .
+    eq < (0).Contract, v > x |= emptySum = true .
+    eq [fv] S |= emptySum = S |= emptySum .
+    eq < t t^ > [fv] S |= emptySum = S |= emptySum .
+    eq {l} [fv] S |= emptySum = S |= emptySum .
+    eq {l} < t t^ > [fv] S |= emptySum = S |= emptySum .
+    ceq S | S' |= emptySum = S |= emptySum or-else S' |= emptySum if S =/= 0 /\ S' =/= 0 .
+    eq [fv] S | S' |= emptySum = S | S' |= emptySum .
+    eq < t t^ > [fv] S | S' |= emptySum = S | S' |= emptySum .
+    eq {l} < t t^ > [fv] S | S' |= emptySum = S | S' |= emptySum .
+    eq LConf |= emptySum = false [owise] .
 
     op zeroValue : -> Prop .
-    eq {l} [fv] (< A, v(0) > x | S) |= zeroValue = true .
-    eq {l} < t t^ > [fv] (< C, v(0) > x | S) |= zeroValue = true .
-    eq [fv] (< A, v(0) > x | S) |= zeroValue = true .
-    eq < t t^ > [fv] (< C, v(0) > x | S) |= zeroValue = true .
+    eq < A, v(0) > x |= zeroValue = true .
+    eq < C, v(0) > x |= zeroValue = true .
+    eq [fv] S |= zeroValue = S |= zeroValue .
+    eq < t t^ > [fv] S |= zeroValue = S |= zeroValue .
+    eq {l} [fv] S |= zeroValue = S |= zeroValue .
+    eq {l} < t t^ > [fv] S |= zeroValue = S |= zeroValue .
+    ceq S | S' |= zeroValue = S |= zeroValue or-else S' |= zeroValue if S =/= 0 /\ S' =/= 0 .
+    eq [fv] S | S' |= zeroValue = S | S' |= zeroValue .
+    eq < t t^ > [fv] S | S' |= zeroValue = S | S' |= zeroValue .
+    eq {l} < t t^ > [fv] S | S' |= zeroValue = S | S' |= zeroValue .
     eq LConf |= zeroValue = false [owise] .
 endm
 
@@ -813,6 +830,17 @@ mod TEST is
     vars SS SS' : Configuration .
     vars ll ll' : Label .
     vars xx^ : List{Name} .
+
+    ops Ex0 Ex1 Ex2 : -> LConfiguration .
+
+    eq Ex0 = < withdraw A , v(10) > x .     *** contract
+    eq Ex1 = < A , v(10) > x .              *** deposit
+    eq Ex2 = < split(                       *** split
+        v(1) ~> C
+        v(2) ~> C'
+        v(3) ~> C''
+    ), v(6) > x .
+
 endm
 
 ***(
@@ -840,13 +868,7 @@ set trace substitution off .
 rewrite in TEST :
     < 0 2 > [x] < A : after 2 : withdraw B, v > x
     | A[x |> A : after 2 : withdraw B] .
-    
-***reduce in TEST :
-***    timelocks(
-***        < after 5 : A : after 2 :  after 4 : withdraw A + after 1 : withdraw B, v > x
-***    |   < A : after 10 : withdraw A + after 15 : withdraw B, v' > y
-***   ) .
-
+    s
 rewrite in TEST : [x] < empty : after 5 : (withdraw B + withdraw A + withdraw A'), v > x .
 
 rewrite in TEST : < 0 3 5 > [x] < after 5 : tau . after 3 : withdraw B , v > x .
@@ -886,7 +908,7 @@ reduce in TEST :
         < withdraw A, v(2) > x("x_0")
         | < withdraw B, v(0) > x("x_1")
         | < withdraw A', v(4) > x("x_2") ,
-    [] <> zeroValue ) .
+    <> zeroValue ) .
 
 *** false
 reduce in TEST :
@@ -901,20 +923,19 @@ reduce in TEST :
     modelCheck(
         < split(
             v(2) ~> (withdraw A)
-            v(0) ~> (withdraw B)
+            v(1) ~> (withdraw B)
             v(4) ~> (withdraw A')
-        ) , v(6) > x ,
-    <> zeroValue ) .
+        ) , v(7) > x ,
+    [] ~ zeroValue ) .
 
 
-*** true -> ERRORE: da false
+*** true
 reduce in TEST :
-          < 0 nil > 
-		  [x x("x_0") x("x_1") x("x_2") x("x_3") x("x_4")]
-		    < withdraw A, v(2) > x("x_0")
-		  | < withdraw A', v(4) > x("x_2")
-		  | < B, v(0) > x("x_3")
-		  | B[x("x_3") |> x("x_4")] |= zeroValue .
+          < split(
+            ***v(2) ~> (withdraw A)
+            v(0) ~> (withdraw B)
+            ***v(4) ~> (withdraw A')
+        ) , v(6) > x |= zeroValue .
 
 reduce in TEST :
   < 0 nil > 
