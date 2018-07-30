@@ -363,6 +363,11 @@ fmod BITML-FREENAME is
     op names in _ : Configuration -> List{Name} [memo] .
     op names in _ : AuthAction -> List{Name} [memo] .
 
+    eq names in C = nil [owise] .
+    eq names in cp = nil [owise] .
+    eq names in S = nil [owise] .
+    eq names in a = nil [owise] .
+
     ***
     *** Contract 
     ***
@@ -761,7 +766,7 @@ mod BITML-PREDS is
     vars p p' : Predicate .
     vars putDeps putSecs : Option .
     
-    *** check that all free names in S are in [fv]
+    *** check that all free names in S are in [fv], and viceversa
     op fvAreTraced : -> Prop .
     eq S |= fvAreTraced = [(names in S)] S |= fvAreTraced .
     eq [fv] S |= fvAreTraced = occursL(fv, names in S) and-then occursL(names in S, fv) .
@@ -773,6 +778,7 @@ mod BITML-PREDS is
     eq {l} < t t^ > [fv] S | S' |= fvAreTraced = S | S' |= fvAreTraced .
     eq LConf |= fvAreTraced = false [owise] .
 
+    *** check for an empty contract
     op emptySum : -> Prop .
     eq < (0).Contract, v > x |= emptySum = true .
     eq [fv] S |= emptySum = S |= emptySum .
@@ -785,6 +791,7 @@ mod BITML-PREDS is
     eq {l} < t t^ > [fv] S | S' |= emptySum = S | S' |= emptySum .
     eq LConf |= emptySum = false [owise] .
 
+    *** check for contracts or deposits with zero-value
     op zeroValue : -> Prop .
     eq < A, v(0) > x |= zeroValue = true .
     eq < C, v(0) > x |= zeroValue = true .
@@ -838,7 +845,7 @@ mod TEST is
     eq Ex2 = < split(                       *** split
         v(1) ~> C
         v(2) ~> C'
-        v(3) ~> C''
+        v(3) ~> (0).Contract
     ), v(6) > x .
 
 endm
@@ -868,7 +875,7 @@ set trace substitution off .
 rewrite in TEST :
     < 0 2 > [x] < A : after 2 : withdraw B, v > x
     | A[x |> A : after 2 : withdraw B] .
-    s
+
 rewrite in TEST : [x] < empty : after 5 : (withdraw B + withdraw A + withdraw A'), v > x .
 
 rewrite in TEST : < 0 3 5 > [x] < after 5 : tau . after 3 : withdraw B , v > x .
