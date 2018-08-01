@@ -1,0 +1,26 @@
+cd /home/nicola/repositories/bitml-sem
+load bitml.maude
+cd /home/nicola/repositories/MUnit
+load mUnit.maude
+
+(munit TEST is
+    assertEqual(put x . 0, put x reveal nil if true . 0)
+    assertEqual(put x if p . 0, put x reveal nil if p . 0)
+    assertEqual(reveal a . 0, put nil reveal a if true . 0)
+    assertEqual(reveal a if p . 0, put nil reveal a if p . 0)
+    assertEqual(put x reveal a . 0, put x reveal a if true . 0)
+	
+    assertEqual(after 0 : D, D)
+    assertEqual(after 5 : after 10 : D, after 10 : D)
+
+    assertEqual(A : A : D, A : D)
+    assertEqual(A : B : D, (A, B) : D)
+    assertEqual(A : B : A : D, (A, B) : D)
+    assertEqual((B, A) : D, (A, B) : D)
+
+    assertTrue([x] < after 5 : tau . after 3 : withdraw B , v > x |= fvAreTraced)
+    assertFalse([y x] < after 5 : tau . after 3 : withdraw B , v > x |= fvAreTraced)
+    assertFalse([x] < after 5 : tau . after 3 : withdraw B , v > y | < after 5 : tau . after 3 : withdraw B , v > x |= fvAreTraced)
+
+    assertEqual( < (A, B) : D, v > x, < (A, B) : D, v > x ) *** does not parse    
+endu)
