@@ -21,29 +21,30 @@ mod BITML-SEM-TEST is
     ops l l' l'' : -> Label .
 endm
 
-***(mod BITML-CHECK-TEST is 
-    protecting BITML-CHECK .
-    ops A B A' B' : -> Participant .
-    ops x x' x'' : -> Name .
-    ops y y' y'' : -> Name .
-    ops z z' z'' : -> Name .
-    ops v v' v'' : -> Value .
-    ops a a' a'' : -> Secret .
-    ops b b' b'' : -> Secret .
-    ops x^ y^ z^ : -> List{Name} . 
-    ops v^ : -> List{Value} . 
-    ops a^ b^ : -> List{Secret} . 
-    ops t t' : -> Nat .
-    ops p p' p'' : -> Predicate .
-    ops C C' C'' : -> Contract .
-    ops D D' D'' : -> GuardedContract .
-    ops l l' l'' : -> Label .
-    
-    vars SS SS' : Configuration .
-    vars ll ll' : Label .
-    vars xx^ : List{Name} .
+mod BITML-CHECK-TEST is 
+	protecting BITML-CHECK .
+	ops A B A' B' : -> Participant .
+	ops x x' x'' : -> Name .
+	ops y y' y'' : -> Name .
+	ops z z' z'' : -> Name .
+	ops v v' v'' : -> Value .
+	ops a a' a'' : -> Secret .
+	ops b b' b'' : -> Secret .
+	ops x^ y^ z^ : -> List{Name} . 
+	ops v^ : -> List{Value} . 
+	ops a^ b^ : -> List{Secret} . 
+    ops n n' N N' : -> Nat .
+	ops p p' p'' : -> Predicate .
+	ops C C' C'' : -> Contract .
+	ops D D' D'' : -> GuardedContract .
+	ops l l' l'' : -> Label .
+    ops S S' : -> Configuration .
+	
+	vars SS SS' : Configuration .
+	vars ll ll' : Label .
+	vars xx^ : List{Name} .
 
-    ops Ex0 Ex1 Ex2 : -> LConfiguration .
+    ops Ex0 Ex1 Ex2 : -> Configuration .
 
     eq Ex0 = < withdraw A , v(10) > x .     *** contract
     eq Ex1 = < A , v(10) > x .              *** deposit
@@ -53,11 +54,11 @@ endm
         v(3) ~> (0).Contract
     ), v(6) > x .
 
-endm)
+endm
 
 cd /home/nicola/repositories/MUnit
 load mUnit.maude
-(munit BITML-SEM-TEST is
+(munit BITML-CHECK-TEST is
     assertEqual(put x . 0, put x reveal nil if true . 0)
     assertEqual(put x if p . 0, put x reveal nil if p . 0)
     assertEqual(reveal a . 0, put nil reveal a if true . 0)
@@ -117,6 +118,8 @@ load mUnit.maude
     assertReachable( ([x] < withdraw A + withdraw B, v > x), {A withdraws v from x} [x x("x_0")] < A, v > x("x_0"))
     assertReachable( ([x] < withdraw A + withdraw B, v > x), {B withdraws v from x} [x x("x_0")] < B, v > x("x_0"))
 
+    assertTrue( 0 |= predicate true )
+    assertFalse( 0 |= predicate false )
 ***    assertTrue([x] < after 5 : tau . after 3 : withdraw B , v > x |= fvAreTraced)
 ***    assertFalse([y x] < after 5 : tau . after 3 : withdraw B , v > x |= fvAreTraced)
 ***    assertFalse([x] < after 5 : tau . after 3 : withdraw B , v > y | < after 5 : tau . after 3 : withdraw B , v > x |= fvAreTraced)
