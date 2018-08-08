@@ -675,24 +675,17 @@ mod BITML-SEM is
 
     *** Labels
     op delta_ : Nat -> Label [ctor frozen] .
-    op _withdraws_from_ : Participant Value Name -> Label [ctor frozen] .
+    op _withdraw_from_ : Participant Value Name -> Label [ctor frozen] .
     op split_ : Name -> Label [ctor frozen] .
     op destroy_ : Name -> Label [ctor frozen] .
     op put : List{Name} List{Secret} Name -> Label [ctor frozen] .
-    op _authorize-join-of_with_ : Participant Name Name -> Label [ctor frozen] .
     op _authorize-destroy-of_ : Participant Name -> Label [ctor frozen] .
-
-    *** Labels
-    op _:__ : Participant Name Name -> Label [ctor frozen] .            *** auth.join
-    op _:___ : Participant Name Value Value -> Label [ctor frozen] .
-    op _:__ : Participant Name Participant -> Label [ctor frozen] .
-    op _:_ : Participant Name -> Label [ctor frozen] .                  *** auth.destroy
-    op _:_ : Participant Secret  -> Label [ctor frozen] .
-    op _:_,_ : Participant Name Contract  -> Label [ctor frozen] .
+    op _reveal_ : Participant Secret  -> Label [ctor frozen] .
+    op _authorize_in_ : Participant Contract Name -> Label [ctor frozen] .
 
     *** cv(l) : get the name from a label l
     op cv(_) : Label -> Option .
-    eq cv(A withdraws v from x) = Some x .
+    eq cv(A withdraw v from x) = Some x .
     eq cv(split(x)) = Some x .
     eq cv(put(x^,a^,y)) = Some y .
     eq cv(l) = None [owise].
@@ -721,12 +714,12 @@ mod BITML-SEM is
                         Some S''' := (secrets a^ S) /\      *** fetch all secrets a^ in S
                         S |= predicate p .
 
-    rl [C-AuthRev] : [fv] {A : a # N} | S => { A : a } [fv] (A : a # N | S) .
+    rl [C-AuthRev] : [fv] {A : a # N} | S => { A reveal a } [fv] (A : a # N | S) .
 
-    crl [C-Withdraw] : [fv] < withdraw A, v > y | S => { A withdraws v from y } [fv z] (< A, v > z | S)
+    crl [C-Withdraw] : [fv] < withdraw A, v > y | S => { A withdraw v from y } [fv z] (< A, v > z | S)
                     if  z := fresh(fv) .
 
-    crl [C-AuthControl] : [fv] < (A, A^) : D, v > y | S => { A : y, D } [fv] (< (A, A^) : D, v > y | A [ y |> (A, A^) : D ] | S)
+    crl [C-AuthControl] : [fv] < (A, A^) : D, v > y | S => { A authorize D in y } [fv] (< (A, A^) : D, v > y | A [ y |> (A, A^) : D ] | S)
                     if  None := (searchAuth A ((A, A^) : D) y S) .  *** check that branch D is not already authorized by A
 
     crl [C-Control] : [fv] < A^ : D, v > y | S => {l'} [fv'] S'

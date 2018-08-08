@@ -112,14 +112,14 @@ load mUnit.maude
     *** withdraw
     assertReachableBnd(
         ([x] < withdraw A, v > x),
-        ({A withdraws v from x} [x x("x_0")] < A, v > x("x_0")),
+        ({A withdraw v from x} [x x("x_0")] < A, v > x("x_0")),
         1)
 
-    assertReachable( ([x] < withdraw A + withdraw B, v > x), {A withdraws v from x} [x x("x_0")] < A, v > x("x_0"))
-    assertReachable( ([x] < withdraw A + withdraw B, v > x), {B withdraws v from x} [x x("x_0")] < B, v > x("x_0"))
+    assertReachable( ([x] < withdraw A + withdraw B, v > x), {A withdraw v from x} [x x("x_0")] < A, v > x("x_0"))
+    assertReachable( ([x] < withdraw A + withdraw B, v > x), {B withdraw v from x} [x x("x_0")] < B, v > x("x_0"))
 
-    assertReachable( (toSemTConf < withdraw A + withdraw B, v > x), {A withdraws v from x} [0 | empty | x x("x_0")] < A, v > x("x_0"))
-    assertReachable( (toSemTConf < withdraw A + withdraw B, v > x), {B withdraws v from x} [0 | empty | x x("x_0")] < B, v > x("x_0"))
+    assertReachable( (toSemTConf < withdraw A + withdraw B, v > x), {A withdraw v from x} [0 | empty | x x("x_0")] < A, v > x("x_0"))
+    assertReachable( (toSemTConf < withdraw A + withdraw B, v > x), {B withdraw v from x} [0 | empty | x x("x_0")] < B, v > x("x_0"))
 
     assertTrue( 0 |= predicate true )
     assertFalse( 0 |= predicate false )
