@@ -4,6 +4,8 @@
 from pygments.lexer import RegexLexer, words, bygroups, using
 from pygments.token import *
 
+__all__ = ['MaudeLexer']
+
 class MaudeLexer(RegexLexer):
     "A Pygments lexer for the Maude language."
 
