@@ -527,28 +527,28 @@ fmod BITML-UTILS is
     eq searchAuthDestroy A x S = None [owise] .
 
     ***
-    *** Return a ordered list of absolute times
+    *** Return a ordered set of absolute times
     ***
-    op timelocks : Configuration -> Set{Nat<} [memo] .
-    eq timelocks(S) = makeSet(sort ($timelocks(S, nil))) .
+    op ticks : Configuration -> Set{Nat<} [memo] .
+    eq ticks(S) = makeSet(sort ($ticks(S, nil))) .
     
     *** tail-recursion on Configuration
-    op $timelocks : Configuration List{Nat<} -> List{Nat<} [memo] .    
-    eq $timelocks(< C, v > x, n^) = $timelocks(C, n^) .
-    ceq $timelocks(S | S', n^) = $timelocks(S, n^) $timelocks(S', n^) if S =/= 0 /\ S' =/= 0 .
-    eq $timelocks(S, n^) = n^ [owise] .
+    op $ticks : Configuration List{Nat<} -> List{Nat<} [memo] .    
+    eq $ticks(< C, v > x, n^) = $ticks(C, n^) .
+    ceq $ticks(S | S', n^) = $ticks(S, n^) $ticks(S', n^) if S =/= 0 /\ S' =/= 0 .
+    eq $ticks(S, n^) = n^ [owise] .
 
     *** tail-recursion on Contracts
-    op $timelocks : Contract List{Nat<} -> List{Nat<} [memo] .
-    eq $timelocks(tau . C, n^) = $timelocks(C, n^) .
-    eq $timelocks(put x^ reveal a^ if p . C, n^) = $timelocks(C, n^) .
-    eq $timelocks(withdraw A, n^) = n^ .
-    eq $timelocks(A^ : D, n^) = $timelocks(D, n^) .
-    eq $timelocks(after n : D, n^) = $timelocks(D, n n^) .
-    eq $timelocks(split(nil),n^) = n^ .
-    eq $timelocks(split( (v ~> C) sel ), n^) = $timelocks(split(sel), n^) $timelocks(C, n^) .
-    ceq $timelocks(C + C', n^) = $timelocks(C, n^) $timelocks(C', n^) if C =/= 0 /\ C' =/= 0 .
-    eq $timelocks(C, n^) = n^ [owise] .
+    op $ticks : Contract List{Nat<} -> List{Nat<} [memo] .
+    eq $ticks(tau . C, n^) = $ticks(C, n^) .
+    eq $ticks(put x^ reveal a^ if p . C, n^) = $ticks(C, n^) .
+    eq $ticks(withdraw A, n^) = n^ .
+    eq $ticks(A^ : D, n^) = $ticks(D, n^) .
+    eq $ticks(after n : D, n^) = $ticks(D, n n^) .
+    eq $ticks(split(nil),n^) = n^ .
+    eq $ticks(split( (v ~> C) sel ), n^) = $ticks(split(sel), n^) $ticks(C, n^) .
+    ceq $ticks(C + C', n^) = $ticks(C, n^) $ticks(C', n^) if C =/= 0 /\ C' =/= 0 .
+    eq $ticks(C, n^) = n^ [owise] .
 endfm
 
 fmod BITML-PREDICATE-SAT is
@@ -671,7 +671,7 @@ mod BITML-SEM is
     op {_}_ : Label SemTConfiguration -> LSemTConfiguration [ctor frozen] .
     
     op toSemTConf_ : Configuration -> SemTConfiguration [prec 50] .
-    eq toSemTConf S = [ 0 | timelocks(S) | (names in S) ] S .
+    eq toSemTConf S = [ 0 | ticks(S) | (names in S) ] S .
 
     *** Labels
     op delta_ : Nat -> Label [ctor frozen] .

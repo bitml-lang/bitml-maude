@@ -74,7 +74,7 @@ load mUnit.maude
     assertEqual((B, A) : D, (A, B) : D)
 
     assertEqual(names in (< C , v > x | < C , v > y) , (x, y)  )
-    assertEqual(timelocks( < after 10 : tau . after 5 : tau . 0 , v > x ), (5 , 10)  )
+    assertEqual(ticks( < after 10 : tau . after 5 : tau . 0 , v > x ), (5 , 10)  )
     assertEqual(toSemTConf (< C , v > x | < C , v > y) , [0 | empty | x,y] (< C , v > x | < C , v > y)  )
 
     assertEqual(fresh(nil), x("x_0"))
