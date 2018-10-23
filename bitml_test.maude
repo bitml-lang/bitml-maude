@@ -125,15 +125,11 @@ load mUnit.maude
     assertFalse( 0 |= predicate false )
     assertTrue( 0 |= predicate true )
 
-***    assertTrue([x] < after 5 : tau . after 3 : withdraw B , v > x |= fvAreTraced)
-***    assertFalse([y x] < after 5 : tau . after 3 : withdraw B , v > x |= fvAreTraced)
-***    assertFalse([x] < after 5 : tau . after 3 : withdraw B , v > y | < after 5 : tau . after 3 : withdraw B , v > x |= fvAreTraced)
-
     assertTrue( < reveal a . 0, v > x |= put-ok )
     assertTrue( < put x . 0, v > x | < A, v > x |= put-ok )
-    assertFalse( (< put x . 0, v > x) |= put-ok )                   *** no deposit
-    assertFalse( (< put x . 0, v > x | < A, v > y) |= put-ok )      *** no deposit
-    assertFalse( (< put x if false . 0, v > x | < A, v > x) |= put-ok )  *** predicate is false    
+    assertFalse( (< put x . 0, v > x) |= put-ok )                       *** no deposit
+    assertFalse( (< put x . 0, v > x | < A, v > y) |= put-ok )          *** no deposit
+    assertFalse( (< put x if false . 0, v > x | < A, v > x) |= put-ok ) *** predicate is false    
 endu)
 
 

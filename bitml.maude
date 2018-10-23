@@ -532,14 +532,14 @@ fmod BITML-UTILS is
     op timelocks : Configuration -> Set{Nat<} [memo] .
     eq timelocks(S) = makeSet(sort ($timelocks(S, nil))) .
     
+    *** tail-recursion on Configuration
     op $timelocks : Configuration List{Nat<} -> List{Nat<} [memo] .    
-    eq $timelocks((0).Configuration, n^) = n^ .
     eq $timelocks(< C, v > x, n^) = $timelocks(C, n^) .
     ceq $timelocks(S | S', n^) = $timelocks(S, n^) $timelocks(S', n^) if S =/= 0 /\ S' =/= 0 .
     eq $timelocks(S, n^) = n^ [owise] .
-    
+
+    *** tail-recursion on Contracts
     op $timelocks : Contract List{Nat<} -> List{Nat<} [memo] .
-    eq $timelocks((0).Contract, n^) = n^ .
     eq $timelocks(tau . C, n^) = $timelocks(C, n^) .
     eq $timelocks(put x^ reveal a^ if p . C, n^) = $timelocks(C, n^) .
     eq $timelocks(withdraw A, n^) = n^ .
