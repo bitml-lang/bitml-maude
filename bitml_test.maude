@@ -1,4 +1,4 @@
-cd /home/nicola/repositories/bitml-sem
+cd /home/nicola/repositories/bitml-maude
 load bitml.maude
 
 mod BITML-SEM-TEST is 

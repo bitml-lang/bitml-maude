@@ -391,6 +391,7 @@ endfm
 fmod BITML-UTILS is
 
     protecting BITML-STREQ .
+    protecting BITML-FREENAME .
     protecting SORTABLE-LIST-AND-SET{Nat<} .
 
     var v : Value .
@@ -404,6 +405,7 @@ fmod BITML-UTILS is
     var n n' N : Nat .
     var a : Secret .
     vars x^ y^ : List{Name} .
+    vars X0 : Set{Name} .
     vars a^ : List{Secret} .
     vars v^ : List{Value} .
     vars A B : Participant .
@@ -529,13 +531,16 @@ fmod BITML-UTILS is
     *** Return a ordered set of absolute times
     ***
     op ticks : Configuration -> Set{Nat<} [memo] .
-    eq ticks(S) = makeSet(sort ($ticks(S, nil))) .
-    
+    eq ticks(S) = ticks(S, names in S) .
+
+    op ticks : Configuration Set{Name}-> Set{Nat<} [memo] .
+    eq ticks(S, X0) = makeSet(sort ($ticks(S, nil, X0))) .
+
     *** tail-recursion on Configuration
-    op $ticks : Configuration List{Nat<} -> List{Nat<} [memo] .    
-    eq $ticks(< C, v > x, n^) = $ticks(C, n^) .
-    ceq $ticks(S | S', n^) = $ticks(S, n^) $ticks(S', n^) if S =/= 0 /\ S' =/= 0 .
-    eq $ticks(S, n^) = n^ [owise] .
+    op $ticks : Configuration List{Nat<} Set{Name} -> List{Nat<} [memo] .    
+    eq $ticks(< C, v > x, n^, X0) = if x in X0 then $ticks(C, n^) else n^ fi .
+    ceq $ticks(S | S', n^, X0) = $ticks(S, n^, X0) $ticks(S', n^, X0) if S =/= 0 /\ S' =/= 0 .
+    eq $ticks(S, n^, X0) = n^ [owise] .
 
     *** tail-recursion on Contracts
     op $ticks : Contract List{Nat<} -> List{Nat<} [memo] .
