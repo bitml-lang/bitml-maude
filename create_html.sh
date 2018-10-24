@@ -2,7 +2,7 @@ DATE=`date +"%a, %e %b %Y %H:%M %:z"`
 TEXT="***
 *** Last update: $DATE
 ***
-*** Github: https://github.com/natzei/bitml-sem/blob/master/bitml.maude
+*** Github: https://github.com/natzei/bitml-maude/blob/master/bitml.maude
 ***
 "
 
