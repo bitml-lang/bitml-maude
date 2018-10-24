@@ -47,13 +47,12 @@ fmod BITML-SORTS is
     ***
     sort Contract .         *** C
     sort GuardedContract .  *** D
-    sort Tau .              *** tau
-    sort PutReveal .        *** put x^ & reveal a^
+    sort PutReveal .        *** put x^ & reveal a^ if p
     sort Withdraw .         *** withdraw A
     sort Split .            *** split ( v -> C, v' -> C' ... )
     sort AuthC .            *** A: D
     sort After .            *** after t : D
-    subsorts Tau PutReveal Withdraw Split AuthC After < GuardedContract < Contract .
+    subsorts PutReveal Withdraw Split AuthC After < GuardedContract < Contract .
     
     ***
     *** Contract Preconditions
@@ -164,7 +163,6 @@ fmod BITML-SYNTAX is
     *** Contract 
     ***
     op 0 : -> Contract [ctor] .                                                                                     *** [contr.id]
-    op tau . _ : Contract -> Tau [ctor prec 25 frozen] .                                                            *** [contr.tau]
     op put_reveal_if_._ : List{Name} List{Secret} Predicate Contract -> PutReveal [ctor prec 25 frozen] .           *** [contr.put-reveal]
     op withdraw_ : Participant -> Withdraw [ctor prec 25 frozen] .                                                  *** [contr.withdraw]
     op _:_ : Set{Participant} GuardedContract -> AuthC [ctor prec 25 frozen] .                                      *** [contr.authorization]
@@ -223,12 +221,14 @@ fmod BITML-STREQ is
     vars n m n' m' : Nat .
     vars E E' E'' : Expression .
 
+    op tau ._ : Contract -> PutReveal [prec 25 frozen] .
     op put_._ : List{Name} Contract -> PutReveal [prec 25 frozen] .
     op put_if_._ : List{Name} Predicate Contract -> PutReveal [prec 25 frozen] .
     op reveal_._ : List{Secret} Contract -> PutReveal [prec 25 frozen] .
     op reveal_if_._ : List{Secret} Predicate Contract -> PutReveal [prec 25 frozen] .
     op put_reveal_._ : List{Name} List{Secret} Contract -> PutReveal [prec 25 frozen] .
-    
+
+    eq tau . C = put nil reveal nil if true . C .
     eq put x^ . C = put x^ reveal nil if true . C .
     eq put x^ if p . C = put x^ reveal nil if p . C .
     eq reveal a^ . C = put nil reveal a^ if true . C .
@@ -252,6 +252,7 @@ endfm
 fmod BITML-FREENAME is
 
     protecting BITML-STREQ .
+    protecting LIST-AND-SET{Name} .
     
     vars d d' : AnonDeposit .
     vars x y z : Name .
@@ -288,7 +289,6 @@ fmod BITML-FREENAME is
     *** Contract 
     ***
     eq is x free in (0).Contract = false .                                                           *** [contr.id]
-    eq is x free in tau . C = is x free in C .                                                       *** [contr.tau]
     eq is x free in put dL reveal sL if p . C = is x free in dL or-else is x free in C .             *** [contr.put-reveal]
     eq is x free in withdraw A = false .                                                             *** [contr.withdraw]
     eq is x free in A : D = is x free in D .                                                         *** [contr.authorization]
@@ -336,17 +336,16 @@ fmod BITML-FREENAME is
     op names in _ : Configuration -> Set{Name} [memo] .
     op names in _ : AuthAction -> Set{Name} [memo] .
 
-    eq names in C = empty [owise] .
-    eq names in cp = empty [owise] .
-    eq names in S = empty [owise] .
-    eq names in a = empty [owise] .
+***    eq names in C = empty [owise] .
+***    eq names in cp = empty [owise] .
+***    eq names in S = empty [owise] .
+***    eq names in a = empty [owise] .
 
     ***
     *** Contract 
     ***
     eq names in (0).Contract = empty .                                              *** [contr.id]
-    eq names in (tau . C) = names in C .                                            *** [contr.tau]
-    eq names in (put dL reveal sL if p . C) = dL, (names in C) .                    *** [contr.put-reveal]
+    eq names in (put dL reveal sL if p . C) = makeSet(dL), (names in C) .           *** [contr.put-reveal]
     eq names in (withdraw A) = empty .                                              *** [contr.withdraw]
     eq names in (A : D) = names in D .                                              *** [contr.authorization]
     eq names in (after t : D) = names in D .                                        *** [contr.after]
@@ -540,7 +539,6 @@ fmod BITML-UTILS is
 
     *** tail-recursion on Contracts
     op $ticks : Contract List{Nat<} -> List{Nat<} [memo] .
-    eq $ticks(tau . C, n^) = $ticks(C, n^) .
     eq $ticks(put x^ reveal a^ if p . C, n^) = $ticks(C, n^) .
     eq $ticks(withdraw A, n^) = n^ .
     eq $ticks(A^ : D, n^) = $ticks(D, n^) .
@@ -727,17 +725,13 @@ mod BITML-SEM is
                         [fv] < D, v > y | S''' => {l'} [fv'] S' /\
                         Some y == cv(l') .
 
-    crl [C-Tau] : [fv] < tau . C, v > y | S => {l'} [fv'] S'
-                    if  [fv] < C, v > y | S => {l'} [fv'] S' /\
-                        Some y == cv(l') .
-
     crl [C-After] : [fv] < after t : D, v > y | S => {l'} [fv'] S'
                     if  [fv] < D, v > y | S => {l'} [fv'] S' /\
                         Some y == cv(l') .
 
-    crl [C-Sum] : [fv] < C + C', v > y | S => {l'} [fv'] S'
-                    if  C =/= 0 /\ C' =/= 0 /\
-                        [fv] < C, v > y | S => {l'} [fv'] S' .
+    crl [C-Sum] : [fv] < D + C, v > y | S => {l'} [fv'] S'
+                    if  C =/= 0 /\
+                        [fv] < D, v > y | S => {l'} [fv'] S' .
 
     ***
     *** [t|t^|fv] S => {l} [t'|t^'|fv'] S'    
@@ -754,9 +748,8 @@ mod BITML-SEM is
                         t >= t' /\
                         Some y == cv(l') .          *** withdraw/split/put-reveal
 
-    crl [Timeout] : [t | t^ | fv] < C + C', v > y | S => {l'} [t | t^ | fv'] S'
-                    if  C =/= 0 /\ C' =/= 0 /\
-                        [fv] < C, v > y | S => {l'} [fv'] S' /\
+    crl [Timeout] : [t | t^ | fv] < D + C, v > y | S => {l'} [t | t^ | fv'] S'
+                    if  [fv] < D, v > y | S => {l'} [fv'] S' /\
                         Some y == cv(l') .          *** withdraw/split/put-reveal
 
 endm

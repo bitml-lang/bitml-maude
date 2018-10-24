@@ -43,7 +43,8 @@ mod BITML-CHECK-TEST is
 	vars SS SS' : Configuration .
 	vars ll ll' : Label .
 	vars xx^ : List{Name} .
-
+    vars fv : List{Name} .
+    
     ops Ex0 Ex1 Ex2 : -> Configuration .
 
     eq Ex0 = < withdraw A , v(10) > x .     *** contract
@@ -73,9 +74,9 @@ load mUnit.maude
     assertEqual(A : B : A : D, (A, B) : D)
     assertEqual((B, A) : D, (A, B) : D)
 
-    assertEqual(names in (< C , v > x | < C , v > y) , (x, y)  )
+    assertEqual(names in (< 0 , v > x | < 0 , v > y) , (x, y)  )
     assertEqual(ticks( < after 10 : tau . after 5 : tau . 0 , v > x ), (5 , 10)  )
-    assertEqual(toSemTConf (< C , v > x | < C , v > y) , [0 | empty | x,y] (< C , v > x | < C , v > y)  )
+    assertEqual(toSemTConf (< 0 , v > x | < 0 , v > y) , [0 | empty | x,y] (< 0 , v > x | < 0 , v > y)  )
 
     assertEqual(fresh(nil), x("x_0"))
     assertEqual(fresh(x("x_0") x("x_1")), x("x_2"))
@@ -115,12 +116,22 @@ load mUnit.maude
         ({A withdraw v from x} [x x("x_0")] < A, v > x("x_0")),
         1)
 
-    assertReachable( ([x] < withdraw A + withdraw B, v > x), {A withdraw v from x} [x x("x_0")] < A, v > x("x_0"))
-    assertReachable( ([x] < withdraw A + withdraw B, v > x), {B withdraw v from x} [x x("x_0")] < B, v > x("x_0"))
+    *** sum
+    assertReachableBnd( ([x] < withdraw A + withdraw B, v > x), ({A withdraw v from x} [x x("x_0")] < A, v > x("x_0")), 1)
+    assertReachableBnd( ([x] < withdraw A + withdraw B, v > x), ({B withdraw v from x} [x x("x_0")] < B, v > x("x_0")), 1)
+
+    assertReachable( ([x] < tau . withdraw A + tau . withdraw B, v > x), 
+                     {put(nil,nil,x)} [x x("x_0")] < withdraw A, v > x("x_0"))  *** choose first tau
+    assertReachable( ([x] < tau . withdraw A + tau . withdraw B, v > x), 
+                     {put(nil,nil,x)} [x x("x_0")] < withdraw B, v > x("x_0"))  *** choose second tau
+    
+    assertReachable( ([x] < tau . withdraw A + tau . withdraw B, v > x), {A withdraw v from x("x_0")} [x x("x_0") x("x_1")] < A, v > x("x_1"))
+    assertReachable( ([x] < tau . withdraw A + tau . withdraw B, v > x), {B withdraw v from x("x_0")} [x x("x_0") x("x_1")] < B, v > x("x_1"))
 
     assertReachable( (toSemTConf < withdraw A + withdraw B, v > x), {A withdraw v from x} [0 | empty | x x("x_0")] < A, v > x("x_0"))
     assertReachable( (toSemTConf < withdraw A + withdraw B, v > x), {B withdraw v from x} [0 | empty | x x("x_0")] < B, v > x("x_0"))
 
+    *** predicates
     assertTrue( 0 |= predicate true )
     assertFalse( 0 |= predicate false )
     assertTrue( 0 |= predicate true )
