@@ -748,7 +748,7 @@ mod BITML-SEM is
                         t >= t' /\
                         Some y == cv(l') .          *** withdraw/split/put-reveal
 
-    crl [Timeout] : [t | t^ | fv] < D + C, v > y | S => {l'} [t | t^ | fv'] S'
+    crl [Sum] : [t | t^ | fv] < D + C, v > y | S => {l'} [t | t^ | fv'] S'
                     if  [fv] < D, v > y | S => {l'} [fv'] S' /\
                         Some y == cv(l') .          *** withdraw/split/put-reveal
 
