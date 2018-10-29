@@ -725,13 +725,18 @@ mod BITML-SEM is
     crl [C-AuthControl] : [fv] < (A, A^) : D, v > y | S => { A authorize D in y } [fv] (< (A, A^) : D, v > y | A [ y |> (A, A^) : D ] | S)
                     if  None := (searchAuth A ((A, A^) : D) y S) .  *** check that branch D is not already authorized by A
 
-    crl [C-Control] : [fv] < A^ : D, v > y | S => {l'} [fv'] S'
-                    if  Some (S'' S''') := (searchAuth A^ (A^ : D) y S) /\    *** S'' are authorizations, S''' S \ S''
+    crl [C-Control] : [fv] < A^ : after t : D, v > y | S => {l'} [fv'] S'
+                    if  Some (S'' S''') := (searchAuth A^ (A^ : after t : D) y S) /\    *** S'' are authorizations, S''' S \ S''
                         [fv] < D, v > y | S''' => {l'} [fv'] S' /\
                         Some y == cv(l') .
 
-    crl [C-After] : [fv] < after t : D, v > y | S => {l'} [fv'] S'
+    crl [C-Control] : [fv] < after t : D, v > y | S => {l'} [fv'] S'
                     if  [fv] < D, v > y | S => {l'} [fv'] S' /\
+                        Some y == cv(l') .
+
+    crl [C-Control] : [fv] < A^ : D, v > y | S => {l'} [fv'] S'
+                    if  Some (S'' S''') := (searchAuth A^ (A^ : D) y S) /\    *** S'' are authorizations, S''' S \ S''
+                        [fv] < D, v > y | S''' => {l'} [fv'] S' /\
                         Some y == cv(l') .
 
     crl [C-Sum] : [fv] < D + C, v > y | S => {l'} [fv'] S'
@@ -748,10 +753,19 @@ mod BITML-SEM is
     crl [Delay] : [t | t^ | fv] S => {delta (t' + - t)} [t' | t'^ | fv] S 
                     if t^ =/= nil /\ t' := head(t^) /\ t'^ := tail(t^) .
 
-    crl [After] : [t | t^ | fv] < after t' : D, v > y | S => {l'} [t | t^ | fv'] S'
-                    if  [fv] < after t' : D, v > y | S => {l'} [fv'] S' /\
-                        t >= t' /\
-                        Some y == cv(l') .          *** withdraw/split/put-reveal
+    crl [Timeout] : [t | t^ | fv] < A^ : after t' : D, v > y | S => {l'} [t | t^ | fv'] S'
+                    if  t >= t' /\                                                      *** timelocks satisfied
+                        [fv] < A^ : after t' : D, v > y | S => {l'} [fv'] S' /\         *** D progresses
+                        Some y == cv(l') .                                              *** withdraw/split/put-reveal
+
+    crl [Timeout] : [t | t^ | fv] < after t' : D, v > y | S => {l'} [t | t^ | fv'] S'
+                    if  t >= t' /\                                                      *** timelocks satisfied
+                        [fv] < after t' : D, v > y | S => {l'} [fv'] S' /\              *** D progresses
+                        Some y == cv(l') .                                              *** withdraw/split/put-reveal
+
+    crl [Timeout] : [t | t^ | fv] < A^ : D, v > y | S => {l'} [t | t^ | fv'] S'
+                    if  [fv] < A^ : D, v > y | S => {l'} [fv'] S' /\                    *** D progresses
+                        Some y == cv(l') .                                              *** withdraw/split/put-reveal
 
     crl [Sum] : [t | t^ | fv] < D + C, v > y | S => {l'} [t | t^ | fv'] S'
                     if  [fv] < D, v > y | S => {l'} [fv'] S' /\

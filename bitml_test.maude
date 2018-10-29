@@ -131,6 +131,20 @@ load mUnit.maude
     assertReachable( (toSemTConf < withdraw A + withdraw B, v > x), {A withdraw v from x} [0 | empty | x x("x_0")] < A, v > x("x_0"))
     assertReachable( (toSemTConf < withdraw A + withdraw B, v > x), {B withdraw v from x} [0 | empty | x x("x_0")] < B, v > x("x_0"))
 
+    assertReachable( ([0 | empty | x] < A : withdraw B, v > x), 
+                      {A authorize withdraw B in x} 
+                      [0 | empty | x] < A : withdraw B, v > x | A [ x |> A : withdraw B ])
+
+    assertReachable( ([0 | empty | x] < A : withdraw B, v > x), 
+                      {B withdraw v from x} 
+                      [0 | empty | x x("x_0")] < B, v > x("x_0"))
+
+    assertReachable( ([0 | empty | x] < A : withdraw B, v > x), 
+                      {destroy x("x_0")} 
+                      [0 | empty | x x("x_0")] 0)
+    
+    
+
     *** predicates
     assertTrue( 0 |= predicate true )
     assertFalse( 0 |= predicate false )
