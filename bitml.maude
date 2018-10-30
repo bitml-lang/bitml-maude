@@ -591,7 +591,7 @@ fmod BITML-PREDICATE-SAT is
     eq $eval | ref(a) | [ (A : a # N) | S ] = N .
     ceq $eval | E | [ S ] = rat( ceiling( (log(float(n))) / (log(float(2))) / 7.0 ) ) if n := $eval E [ S ].
     eq $eval E + E' [ S ] = $eval E [ S ] + $eval E' [ S ] .
-    eq $eval E - E' [ S ] = $eval E [ S ] - $eval E' [ S ] .
+    eq $eval E - E' [ S ] = $eval E [ S ] + - $eval E' [ S ] .
 
     ***
     *** Simplifications
@@ -773,7 +773,7 @@ mod BITML-SEM is
 
 endm
 
-mod BITML-PREDS is
+***(mod BITML-PREDS is
     protecting BITML-FREENAME .
     protecting BITML-SEM .
     protecting SATISFACTION .
@@ -854,10 +854,10 @@ mod BITML-PREDS is
     eq S |= put-ok = false [owise] .
     eq LConf |= put-ok = false [owise] .
     eq LTConf |= put-ok = false [owise] .    
-endm
+endm)
 
 mod BITML-CHECK is
-    including BITML-PREDS .
+***    including BITML-PREDS .
     including MODEL-CHECKER .
     including LTL-SIMPLIFIER .
 endm
