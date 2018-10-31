@@ -184,3 +184,5 @@ rewrite in BITML-SEM-TEST :
         v(2) ~> ( reveal (a b) if | ref(a) | == | ref(b) | . withdraw A
                 + reveal (a b) if | ref(a) | != | ref(b) | . withdraw B ) ), v(6) > x("x_0") .
 )
+
+

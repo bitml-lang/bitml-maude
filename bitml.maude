@@ -189,7 +189,7 @@ fmod BITML-SYNTAX is
     op _[_] : Participant AuthAction -> Auth [ctor prec 35 frozen] .                                            *** [conf.authorization]
     op {_:_#_} : Participant Secret Nat -> ConfSec [ctor prec 35 frozen] .                                      *** [conf.committed-secret]
     op _:_#_ : Participant Secret Nat -> ConfRev [ctor prec 35 frozen] .                                        *** [conf.revealed-secret]
-    op _|_ : Configuration Configuration -> Configuration [comm assoc ctor id: 0 frozen format (d ni d d) ] .   *** [conf.parallel]
+    op _|_ : Configuration Configuration -> Configuration [comm assoc ctor id: 0 frozen] .                      *** [conf.parallel]
 
     ***
     *** Authorization
@@ -657,8 +657,6 @@ mod BITML-SEM is
     vars p p' : Predicate .
     vars putDeps putSecs : Option .
     
-    sorts Label .
-
     sort SemConfiguration .
     sort LSemConfiguration .
     subsort SemConfiguration < LSemConfiguration .
@@ -677,6 +675,7 @@ mod BITML-SEM is
     eq toSemTConf S = [ 0 | ticks(S) | (names in S) ] S .
 
     *** Labels
+    sort Label .
     op delta_ : Nat -> Label [ctor frozen] .
     op _withdraw_from_ : Participant Value Name -> Label [ctor frozen] .
     op split_ : Name -> Label [ctor frozen] .
@@ -693,17 +692,27 @@ mod BITML-SEM is
     eq cv(put(x^,a^,y)) = Some y .
     eq cv(l) = None [owise].
 
+    *** strategies
+    op strategy : SemConfiguration Label -> Bool .
+    op strategyT : SemTConfiguration Label -> Bool .
+    eq strategy(S:SemConfiguration, l) = true [owise] .         *** default: all moves are enabled
+    eq strategyT(S:SemTConfiguration, l) = true [owise] .       *** default: all moves are enabled
+
     *** Allow progression of labelled configuration (untimed)
-    crl [Rifl] : {l} [fv] S => {l'} [fv'] S' if [fv] S => {l'} [fv'] S' .
+    crl [Rifl] : {l} [fv] S => {l'} [fv'] S' 
+        if  [fv] S => {l'} [fv'] S' .
 
     *** Allow progression of labelled configuration (timed)
-    crl [Rifl] : {l} [t | t^ | fv] S => {l'} [t' | t'^ | fv'] S' if [t | t^ | fv] S => {l'} [t' | t'^ | fv'] S' .
+    crl [Rifl] : {l} [t | t^ | fv] S => {l'} [t' | t'^ | fv'] S' 
+        if  [t | t^ | fv] S => {l'} [t' | t'^ | fv'] S' .
 
     ***
     *** [fv] S => {l} [fv'] S'    
     ***
-    crl [Dep-AuthDestroy] : [fv] < A , v > x | S => { A authorize-destroy-of x } [fv] < A , v > x | A [ x |># ] | S
-                    if  None := (searchAuthDestroy A x S) .  *** check that A has not authorized to destroy x
+    crl [Dep-AuthDestroy] : [fv] < A , v > x | S => { l' } [fv] < A , v > x | A [ x |># ] | S
+                    if  l' := A authorize-destroy-of x /\
+                        strategy([fv] < A , v > x | S, l') /\
+                        None := (searchAuthDestroy A x S) .  *** check that A has not authorized to destroy x
 
     rl [Dep-Destroy] : [fv] < A , v > x | A [ x |># ] | S => { destroy x } [fv] S .
 
@@ -717,13 +726,17 @@ mod BITML-SEM is
                         Some S''' := (secrets a^ S) /\      *** fetch all secrets a^ in S
                         S |= predicate p .
 
-    rl [C-AuthRev] : [fv] {A : a # N} | S => { A reveal a } [fv] (A : a # N | S) .
+    crl [C-AuthRev] : [fv] {A : a # N} | S => { l' } [fv] (A : a # N | S) 
+                    if  l' := A reveal a /\
+                        strategy([fv] {A : a # N} | S, l') .
 
     crl [C-Withdraw] : [fv] < withdraw A, v > y | S => { A withdraw v from y } [fv z] (< A, v > z | S)
                     if  z := fresh(fv) .
 
-    crl [C-AuthControl] : [fv] < (A, A^) : D, v > y | S => { A authorize D in y } [fv] (< (A, A^) : D, v > y | A [ y |> (A, A^) : D ] | S)
-                    if  None := (searchAuth A ((A, A^) : D) y S) .  *** check that branch D is not already authorized by A
+    crl [C-AuthControl] : [fv] < (A, A^) : D, v > y | S => { l' } [fv] (< (A, A^) : D, v > y | A [ y |> (A, A^) : D ] | S)
+                    if  l' := A authorize D in y  /\
+                        strategy([fv] < (A, A^) : D, v > y | S, l') /\
+                        None := (searchAuth A ((A, A^) : D) y S) .  *** check that branch D is not already authorized by A
 
     crl [C-Control] : [fv] < A^ : after t : D, v > y | S => {l'} [fv'] S'
                     if  Some (S'' S''') := (searchAuth A^ (A^ : after t : D) y S) /\    *** S'' are authorizations, S''' S \ S''
@@ -740,8 +753,7 @@ mod BITML-SEM is
                         Some y == cv(l') .
 
     crl [C-Sum] : [fv] < D + C, v > y | S => {l'} [fv'] S'
-                    if  C =/= 0 /\
-                        [fv] < D, v > y | S => {l'} [fv'] S' .
+                    if  [fv] < D, v > y | S => {l'} [fv'] S' .
 
     ***
     *** [t|t^|fv] S => {l} [t'|t^'|fv'] S'    
@@ -755,21 +767,25 @@ mod BITML-SEM is
 
     crl [Timeout] : [t | t^ | fv] < A^ : after t' : D, v > y | S => {l'} [t | t^ | fv'] S'
                     if  t >= t' /\                                                      *** timelocks satisfied
-                        [fv] < A^ : after t' : D, v > y | S => {l'} [fv'] S' /\         *** D progresses
-                        Some y == cv(l') .                                              *** withdraw/split/put-reveal
+                        [fv] < A^ : after t' : D, v > y | S => {l'} [fv'] S' /\         *** untimed progression
+                        Some y == cv(l') /\                                             *** withdraw/split/put-reveal
+                        strategyT([t | t^ | fv] < A^ : after t' : D, v > y | S, l') .
 
     crl [Timeout] : [t | t^ | fv] < after t' : D, v > y | S => {l'} [t | t^ | fv'] S'
                     if  t >= t' /\                                                      *** timelocks satisfied
-                        [fv] < after t' : D, v > y | S => {l'} [fv'] S' /\              *** D progresses
-                        Some y == cv(l') .                                              *** withdraw/split/put-reveal
+                        [fv] < after t' : D, v > y | S => {l'} [fv'] S' /\              *** untimed progression
+                        Some y == cv(l') /\                                             *** withdraw/split/put-reveal
+                        strategyT([t | t^ | fv] < after t' : D, v > y | S, l') .
 
     crl [Timeout] : [t | t^ | fv] < A^ : D, v > y | S => {l'} [t | t^ | fv'] S'
-                    if  [fv] < A^ : D, v > y | S => {l'} [fv'] S' /\                    *** D progresses
-                        Some y == cv(l') .                                              *** withdraw/split/put-reveal
+                    if  [fv] < A^ : D, v > y | S => {l'} [fv'] S' /\                    *** untimed progression
+                        Some y == cv(l') /\                                             *** withdraw/split/put-reveal
+                        strategyT([t | t^ | fv] < A^ : D, v > y | S, l') .
 
     crl [Sum] : [t | t^ | fv] < D + C, v > y | S => {l'} [t | t^ | fv'] S'
                     if  [fv] < D, v > y | S => {l'} [fv'] S' /\
-                        Some y == cv(l') .          *** withdraw/split/put-reveal
+                        Some y == cv(l') /\                                             *** withdraw/split/put-reveal
+                        strategyT([t | t^ | fv] < D + C, v > y | S, l') .
 
 endm
 
@@ -858,11 +874,54 @@ endm)
 
 mod BITML-CHECK is
 ***    including BITML-PREDS .
+    protecting BITML-SEM .    
     including MODEL-CHECKER .
     including LTL-SIMPLIFIER .
 endm
 
 mod BITML is
     protecting BITML-SEM .
+endm
+
+***
+*** Example 1.0
+***
+***     rewrite in Example-1.0 : S .
+***
+mod Example-1.0 is
+    protecting BITML .
+
+    op A : -> Participant .
+    op v : -> Value .
+    op x : -> Name .
+    op S : -> SemConfiguration .
+
+    *** deposit
+    eq S = [x] < A, v > x .
+
+    *** strategy
+    ***     block the A's authorization to destroy the deposit x
+    eq strategy(S:SemConfiguration, A authorize-destroy-of x) = false .
+endm
+
+***
+*** Example 1.1
+***
+***     rewrite in Example-1.1 : S .
+***
+mod Example-1.1 is
+    protecting BITML .
+
+    ops A B : -> Participant .
+    ops v v' : -> Value .
+    ops x y : -> Name .
+    op S : -> SemConfiguration .
+
+    *** 2 deposits
+    eq S = [x y] < A, v > x | < B, v' > y .
+
+    *** strategy
+    ***     block any authorization to destroy any deposit
+    eq strategy(S:SemConfiguration, A:Participant authorize-destroy-of x:Name) = false .
 endm
 
