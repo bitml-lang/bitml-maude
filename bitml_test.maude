@@ -76,7 +76,7 @@ load mUnit.maude
 
     assertEqual(names in (< 0 , v > x | < 0 , v > y) , (x, y)  )
     assertEqual(ticks( < after 10 : tau . after 5 : tau . 0 , v > x ), (5 , 10)  )
-    assertEqual(toSemTConf (< 0 , v > x | < 0 , v > y) , [0 | empty | x,y] (< 0 , v > x | < 0 , v > y)  )
+    assertEqual(toSemTConf (< 0 , v > x | < 0 , v > y) , [0 | nil | x,y] (< 0 , v > x | < 0 , v > y)  )
 
     assertEqual(fresh(nil), x("x_0"))
     assertEqual(fresh(x("x_0") x("x_1")), x("x_2"))
@@ -128,20 +128,20 @@ load mUnit.maude
     assertReachable( ([x] < tau . withdraw A + tau . withdraw B, v > x), {A withdraw v from x("x_0")} [x x("x_0") x("x_1")] < A, v > x("x_1"))
     assertReachable( ([x] < tau . withdraw A + tau . withdraw B, v > x), {B withdraw v from x("x_0")} [x x("x_0") x("x_1")] < B, v > x("x_1"))
 
-    assertReachable( (toSemTConf < withdraw A + withdraw B, v > x), {A withdraw v from x} [0 | empty | x x("x_0")] < A, v > x("x_0"))
-    assertReachable( (toSemTConf < withdraw A + withdraw B, v > x), {B withdraw v from x} [0 | empty | x x("x_0")] < B, v > x("x_0"))
+    assertReachable( (toSemTConf < withdraw A + withdraw B, v > x), {A withdraw v from x} [0 | nil | x x("x_0")] < A, v > x("x_0"))
+    assertReachable( (toSemTConf < withdraw A + withdraw B, v > x), {B withdraw v from x} [0 | nil | x x("x_0")] < B, v > x("x_0"))
 
-    assertReachable( ([0 | empty | x] < A : withdraw B, v > x), 
+    assertReachable( ([0 | nil | x] < A : withdraw B, v > x), 
                       {A authorize withdraw B in x} 
-                      [0 | empty | x] < A : withdraw B, v > x | A [ x |> A : withdraw B ])
+                      [0 | nil | x] < A : withdraw B, v > x | A [ x |> A : withdraw B ])
 
-    assertReachable( ([0 | empty | x] < A : withdraw B, v > x), 
+    assertReachable( ([0 | nil | x] < A : withdraw B, v > x), 
                       {B withdraw v from x} 
-                      [0 | empty | x x("x_0")] < B, v > x("x_0"))
+                      [0 | nil | x x("x_0")] < B, v > x("x_0"))
 
-    assertReachable( ([0 | empty | x] < A : withdraw B, v > x), 
+    assertReachable( ([0 | nil | x] < A : withdraw B, v > x), 
                       {destroy x("x_0")} 
-                      [0 | empty | x x("x_0")] 0)
+                      [0 | nil | x x("x_0")] 0)
     
     
 
@@ -171,7 +171,7 @@ rewrite in BITML-SEM-TEST :
 rewrite in BITML-SEM-TEST :
     < put x . 0, v > y | < A, v(10) > x .
 
-rewrite in BITML-SEM-TEST : [x] < empty : after 5 : (withdraw B + withdraw A + withdraw A'), v > x .
+rewrite in BITML-SEM-TEST : [x] < nil : after 5 : (withdraw B + withdraw A + withdraw A'), v > x .
 
 rewrite in BITML-SEM-TEST : < 0 (3 5).List{Nat<} > [x] < after 5 : tau . after 3 : withdraw B , v > x .
 

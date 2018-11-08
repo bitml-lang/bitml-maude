@@ -412,7 +412,7 @@ fmod BITML-UTILS is
     vars A^ B^ : Set{Participant} .
     vars N^ : List{Nat<} .
     var accConf : Configuration .    
-    var n^ : List{Nat<} .
+    var n^ : Set{Nat<} .
     var p : Predicate .
     var sel : List{SplitEntry} .
  
@@ -530,27 +530,27 @@ fmod BITML-UTILS is
     ***
     *** Return a ordered set of absolute times
     ***
-    op ticks : Configuration -> Set{Nat<} [memo] .
+    op ticks : Configuration -> List{Nat<} [memo] .
     eq ticks(S) = ticks(S, names in S) .
 
-    op ticks : Configuration Set{Name}-> Set{Nat<} [memo] .
-    eq ticks(S, X0) = makeSet(sort ($ticks(S, nil, X0))) .
+    op ticks : Configuration Set{Name} -> List{Nat<} [memo] .
+    eq ticks(S, X0) = makeList($ticks(S, X0, empty)) .
 
     *** tail-recursion on Configuration
-    op $ticks : Configuration List{Nat<} Set{Name} -> List{Nat<} [memo] .    
-    eq $ticks(< C, v > x, n^, X0) = if x in X0 then $ticks(C, n^) else n^ fi .
-    ceq $ticks(S | S', n^, X0) = $ticks(S, n^, X0) $ticks(S', n^, X0) if S =/= 0 /\ S' =/= 0 .
-    eq $ticks(S, n^, X0) = n^ [owise] .
+    op $ticks : Configuration Set{Name} Set{Nat<} -> Set{Nat<} [memo] .
+    eq $ticks(< C, v > x, X0, n^) = if x in X0 then $ticks(C, n^) else n^ fi .
+    ceq $ticks(S | S', X0, n^) = $ticks(S, X0, n^), $ticks(S', X0, n^) if S =/= 0 /\ S' =/= 0 .
+    eq $ticks(S, X0, n^) = n^ [owise] .
 
     *** tail-recursion on Contracts
-    op $ticks : Contract List{Nat<} -> List{Nat<} [memo] .
+    op $ticks : Contract Set{Nat<} -> Set{Nat<} [memo] .
     eq $ticks(put x^ reveal a^ if p . C, n^) = $ticks(C, n^) .
     eq $ticks(withdraw A, n^) = n^ .
     eq $ticks(A^ : D, n^) = $ticks(D, n^) .
-    eq $ticks(after n : D, n^) = $ticks(D, n n^) .
+    eq $ticks(after n : D, n^) = $ticks(D, (n, n^)) .
     eq $ticks(split(nil),n^) = n^ .
-    eq $ticks(split( (v ~> C) sel ), n^) = $ticks(split(sel), n^) $ticks(C, n^) .
-    ceq $ticks(C + C', n^) = $ticks(C, n^) $ticks(C', n^) if C =/= 0 /\ C' =/= 0 .
+    eq $ticks(split( (v ~> C) sel ), n^) = $ticks(split(sel), n^), $ticks(C, n^) .
+    ceq $ticks(C + C', n^) = $ticks(C, n^), $ticks(C', n^) if C =/= 0 /\ C' =/= 0 .
     eq $ticks(C, n^) = n^ [owise] .
 endfm
 
@@ -645,14 +645,14 @@ mod BITML-SEM is
     vars v^ : List{Value} .
     vars A^ B^ : Set{Participant} .
     vars n^ N^ : List{Nat<} .
-    vars t^ t'^ : Set{Nat<} .
+    vars t^ t'^ : List{Nat<} .
     vars S S' S'' S''' P P' : Configuration .
     vars a a' : Secret .
     vars n n' N t t' : Nat .
     vars s s' : Secret .
     vars s^ : List{Secret} .
     vars l l' : Label .
-    vars fv fv' : List{Name} .
+    vars fv fv' : Set{Name} .
     var splitEntries : List{SplitEntry} .
     vars p p' : Predicate .
     vars putDeps putSecs : Option .
@@ -666,7 +666,7 @@ mod BITML-SEM is
     subsort SemTConfiguration < LSemTConfiguration .
     
     op [_]_ : Set{Name} Configuration -> SemConfiguration [ctor frozen] .
-    op [_|_|_]_ : Nat Set{Nat<} Set{Name} Configuration -> SemTConfiguration [ctor frozen] .
+    op [_|_|_]_ : Nat List{Nat<} Set{Name} Configuration -> SemTConfiguration [ctor frozen] .
 
     op {_}_ : Label SemConfiguration -> LSemConfiguration [ctor frozen] .
     op {_}_ : Label SemTConfiguration -> LSemTConfiguration [ctor frozen] .
@@ -712,7 +712,7 @@ mod BITML-SEM is
     crl [Dep-AuthDestroy] : [fv] < A , v > x | S => { l' } [fv] < A , v > x | A [ x |># ] | S
                     if  l' := A authorize-destroy-of x /\
                         strategy([fv] < A , v > x | S, l') /\
-                        None := (searchAuthDestroy A x S) .  *** check that A has not authorized to destroy x
+                        None := (searchAuthDestroy A x S) .  *** check that A has not already authorized to destroy x
 
     rl [Dep-Destroy] : [fv] < A , v > x | A [ x |># ] | S => { destroy x } [fv] S .
 
@@ -760,7 +760,8 @@ mod BITML-SEM is
     ***
     crl [Action] : [t | t^ | fv] S => {l'} [t | t^ | fv'] S'
                     if  [fv] S => {l'} [fv'] S' /\
-                        None == cv(l') .            *** not a withdraw/split/put-reveal
+                        None == cv(l') /\            *** not a withdraw/split/put-reveal
+                        strategyT([t | t^ | fv] S, l') .
 
     crl [Delay] : [t | t^ | fv] S => {delta (t' + - t)} [t' | t'^ | fv] S 
                     if t^ =/= nil /\ t' := head(t^) /\ t'^ := tail(t^) .
@@ -900,7 +901,7 @@ mod Example-1.0 is
     eq S = [x] < A, v > x .
 
     *** strategy
-    ***     block the A's authorization to destroy the deposit x
+    ***     A does not authorize to destroy the deposit x
     eq strategy(S:SemConfiguration, A authorize-destroy-of x) = false .
 endm
 
@@ -914,14 +915,37 @@ mod Example-1.1 is
 
     ops A B : -> Participant .
     ops v v' : -> Value .
-    ops x y : -> Name .
+    ops x x' y y' : -> Name .
     op S : -> SemConfiguration .
 
     *** 2 deposits
-    eq S = [x y] < A, v > x | < B, v' > y .
+    eq S = [x, y] < A, v > x | < A, v > x' | < B, v' > y | < B, v' > y' .
 
     *** strategy
-    ***     block any authorization to destroy any deposit
-    eq strategy(S:SemConfiguration, A:Participant authorize-destroy-of x:Name) = false .
+    ***     A does not authorize to destroy any deposit, B does
+    *** result
+    ***     only B's deposits will be destroyed
+    eq strategy(S:SemConfiguration, A authorize-destroy-of x:Name) = false .
 endm
 
+***
+*** Example 2.0
+***
+***     rewrite in Example-2.0 : S .
+***
+mod Example-2.0 is
+    protecting BITML .
+
+    op A : -> Participant .
+    op v : -> Value .
+    op x : -> Name .
+    op S : -> SemTConfiguration .
+
+    *** deposit
+    eq S = [0 | 0 5 | x] < A, v > x .
+
+    *** strategy
+    ***     A does not authorize to destroy the deposit x
+    ***eq strategyT([t:Nat | t^:List{Nat<} | fv:Set{Name}] S:Configuration, destroy x) = false .
+    eq strategyT([t:Nat | t^:List{Nat<} | fv:Set{Name}] S:Configuration, A authorize-destroy-of x) = false .
+endm
