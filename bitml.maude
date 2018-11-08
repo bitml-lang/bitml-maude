@@ -661,18 +661,12 @@ mod BITML-SEM is
     sort LSemConfiguration .
     subsort SemConfiguration < LSemConfiguration .
 
-    sort SemTConfiguration .
-    sort LSemTConfiguration .
-    subsort SemTConfiguration < LSemTConfiguration .
-    
-    op [_]_ : Set{Name} Configuration -> SemConfiguration [ctor frozen] .
-    op [_|_|_]_ : Nat List{Nat<} Set{Name} Configuration -> SemTConfiguration [ctor frozen] .
+    op [_|_|_]_ : Nat List{Nat<} Set{Name} Configuration -> SemConfiguration [ctor frozen] .
 
     op {_}_ : Label SemConfiguration -> LSemConfiguration [ctor frozen] .
-    op {_}_ : Label SemTConfiguration -> LSemTConfiguration [ctor frozen] .
     
-    op toSemTConf_ : Configuration -> SemTConfiguration [prec 50] .
-    eq toSemTConf S = [ 0 | ticks(S) | (names in S) ] S .
+    op toSemConf_ : Configuration -> SemConfiguration [prec 50] .
+    eq toSemConf S = [ 0 | ticks(S) | (names in S) ] S .
 
     *** Labels
     sort Label .
@@ -694,99 +688,61 @@ mod BITML-SEM is
 
     *** strategies
     op strategy : SemConfiguration Label -> Bool .
-    op strategyT : SemTConfiguration Label -> Bool .
     eq strategy(S:SemConfiguration, l) = true [owise] .         *** default: all moves are enabled
-    eq strategyT(S:SemTConfiguration, l) = true [owise] .       *** default: all moves are enabled
-
-    *** Allow progression of labelled configuration (untimed)
-    crl [Rifl] : {l} [fv] S => {l'} [fv'] S' 
-        if  [fv] S => {l'} [fv'] S' .
 
     *** Allow progression of labelled configuration (timed)
     crl [Rifl] : {l} [t | t^ | fv] S => {l'} [t' | t'^ | fv'] S' 
         if  [t | t^ | fv] S => {l'} [t' | t'^ | fv'] S' .
 
     ***
-    *** [fv] S => {l} [fv'] S'    
+    *** [t | t^ | fv] S => {l} [t' | t'^ | fv'] S'    
     ***
-    crl [Dep-AuthDestroy] : [fv] < A , v > x | S => { l' } [fv] < A , v > x | A [ x |># ] | S
-                    if  l' := A authorize-destroy-of x /\
-                        strategy([fv] < A , v > x | S, l') /\
+    crl [Dep-AuthDestroy] : [t | t^ | fv] < A , v > x | S => { A authorize-destroy-of x } [t | t^ | fv] < A , v > x | A [ x |># ] | S
+                    if  strategy([t | t^ | fv] < A , v > x | S, A authorize-destroy-of x) /\
                         None := (searchAuthDestroy A x S) .  *** check that A has not already authorized to destroy x
 
-    rl [Dep-Destroy] : [fv] < A , v > x | A [ x |># ] | S => { destroy x } [fv] S .
+    rl [Dep-Destroy] : [t | t^ | fv] < A , v > x | A [ x |># ] | S => { destroy x } [t | t^ | fv] S .
 
-    crl [C-Split] : [fv] < (split (splitEntries) ), v > y | S => { split(y) } [fv fv'] ((|| splitEntries fv') | S ) 
+    crl [C-Split] : [t | t^ | fv] < (split (splitEntries) ), v > y | S => { split(y) } [t | t^ | fv, fv'] ((|| splitEntries fv') | S ) 
                     if fv' := fresh(fv,size(splitEntries)) .
 
-    crl [C-PutReveal] : [fv] (< (put (x^) reveal a^ if p . C), v > y | S) => 
-                    { put(x^,a^,y) } [fv z] ( < C, v > z | S'')
+    crl [C-PutReveal] : [t | t^ | fv] (< (put (x^) reveal a^ if p . C), v > y | S) => { put(x^,a^,y) } [t | t^ | fv, z] ( < C, v > z | S'')
                     if  z := fresh(fv) /\ 
                         Some (S' S'') := (deposits x^ S) /\ *** fetch all deposits x^ in S (S' are deposits in S, S'' == S \ S')
-                        Some S''' := (secrets a^ S) /\      *** fetch all secrets a^ in S
-                        S |= predicate p .
+                        Some S''' := (secrets a^ S'') /\    *** fetch all secrets a^ in S
+                        S''' |= predicate p .
 
-    crl [C-AuthRev] : [fv] {A : a # N} | S => { l' } [fv] (A : a # N | S) 
-                    if  l' := A reveal a /\
-                        strategy([fv] {A : a # N} | S, l') .
+    crl [C-AuthRev] : [t | t^ | fv] {A : a # N} | S => { A reveal a } [t | t^ | fv] (A : a # N | S) 
+                    if  strategy([t | t^ | fv] {A : a # N} | S, A reveal a) .
 
-    crl [C-Withdraw] : [fv] < withdraw A, v > y | S => { A withdraw v from y } [fv z] (< A, v > z | S)
+    crl [C-Withdraw] : [t | t^ | fv] < withdraw A, v > y | S => { A withdraw v from y } [t | t^ | fv, z] (< A, v > z | S)
                     if  z := fresh(fv) .
 
-    crl [C-AuthControl] : [fv] < (A, A^) : D, v > y | S => { l' } [fv] (< (A, A^) : D, v > y | A [ y |> (A, A^) : D ] | S)
-                    if  l' := A authorize D in y  /\
-                        strategy([fv] < (A, A^) : D, v > y | S, l') /\
+    crl [C-AuthControl] : [t | t^ | fv] < (A, A^) : D, v > y | S => { A authorize D in y } [t | t^ | fv] (< (A, A^) : D, v > y | A [ y |> (A, A^) : D ] | S)
+                    if  strategy([t | t^ | fv] < (A, A^) : D, v > y | S, A authorize D in y) /\
                         None := (searchAuth A ((A, A^) : D) y S) .  *** check that branch D is not already authorized by A
 
-    crl [C-Control] : [fv] < A^ : after t : D, v > y | S => {l'} [fv'] S'
-                    if  Some (S'' S''') := (searchAuth A^ (A^ : after t : D) y S) /\    *** S'' are authorizations, S''' S \ S''
-                        [fv] < D, v > y | S''' => {l'} [fv'] S' /\
-                        Some y == cv(l') .
+    crl [C-Control] : [t | t^ | fv] < A^ : after t' : D, v > y | S => {l'} [t | t^ | fv'] S'
+                    if  t >= t' /\                                                      *** timelocks satisfied
+                        Some (S'' S''') := (searchAuth A^ (A^ : after t' : D) y S) /\   *** S'' are authorizations, S''' ==  S \ S''
+                        [t | t^ | fv] < D, v > y | S''' => {l'} [t | t^ | fv'] S' /\
+                        Some y == cv(l') .                                              *** withdraw/split/put-reveal
 
-    crl [C-Control] : [fv] < after t : D, v > y | S => {l'} [fv'] S'
-                    if  [fv] < D, v > y | S => {l'} [fv'] S' /\
-                        Some y == cv(l') .
+    crl [C-Control] : [t | t^ | fv] < after t' : D, v > y | S => {l'} [t | t^ | fv'] S'
+                    if  t >= t' /\                                                      *** timelocks satisfied
+                        [t | t^ | fv] < D, v > y | S => {l'} [t | t^ | fv'] S' /\       *** D progresses
+                        Some y == cv(l') .                                              *** withdraw/split/put-reveal
 
-    crl [C-Control] : [fv] < A^ : D, v > y | S => {l'} [fv'] S'
-                    if  Some (S'' S''') := (searchAuth A^ (A^ : D) y S) /\    *** S'' are authorizations, S''' S \ S''
-                        [fv] < D, v > y | S''' => {l'} [fv'] S' /\
-                        Some y == cv(l') .
+    crl [C-Control] : [t | t^ | fv] < A^ : D, v > y | S => {l'} [t | t^ | fv'] S'
+                    if  Some (S'' S''') := (searchAuth A^ (A^ : D) y S) /\              *** S'' are authorizations, S''' == S \ S''
+                        [t | t^ | fv] < D, v > y | S''' => {l'} [t | t^ | fv'] S' /\    *** D progresses
+                        Some y == cv(l') .                                              *** withdraw/split/put-reveal
 
-    crl [C-Sum] : [fv] < D + C, v > y | S => {l'} [fv'] S'
-                    if  [fv] < D, v > y | S => {l'} [fv'] S' .
-
-    ***
-    *** [t|t^|fv] S => {l} [t'|t^'|fv'] S'    
-    ***
-    crl [Action] : [t | t^ | fv] S => {l'} [t | t^ | fv'] S'
-                    if  [fv] S => {l'} [fv'] S' /\
-                        None == cv(l') /\            *** not a withdraw/split/put-reveal
-                        strategyT([t | t^ | fv] S, l') .
+    crl [C-Sum] : [t | t^ | fv] < D + C, v > y | S => {l'} [t | t^ | fv'] S'
+                    if  [t | t^ | fv] < D, v > y | S => {l'} [t | t^ | fv'] S' .
 
     crl [Delay] : [t | t^ | fv] S => {delta (t' + - t)} [t' | t'^ | fv] S 
                     if t^ =/= nil /\ t' := head(t^) /\ t'^ := tail(t^) .
-
-    crl [Timeout] : [t | t^ | fv] < A^ : after t' : D, v > y | S => {l'} [t | t^ | fv'] S'
-                    if  t >= t' /\                                                      *** timelocks satisfied
-                        [fv] < A^ : after t' : D, v > y | S => {l'} [fv'] S' /\         *** untimed progression
-                        Some y == cv(l') /\                                             *** withdraw/split/put-reveal
-                        strategyT([t | t^ | fv] < A^ : after t' : D, v > y | S, l') .
-
-    crl [Timeout] : [t | t^ | fv] < after t' : D, v > y | S => {l'} [t | t^ | fv'] S'
-                    if  t >= t' /\                                                      *** timelocks satisfied
-                        [fv] < after t' : D, v > y | S => {l'} [fv'] S' /\              *** untimed progression
-                        Some y == cv(l') /\                                             *** withdraw/split/put-reveal
-                        strategyT([t | t^ | fv] < after t' : D, v > y | S, l') .
-
-    crl [Timeout] : [t | t^ | fv] < A^ : D, v > y | S => {l'} [t | t^ | fv'] S'
-                    if  [fv] < A^ : D, v > y | S => {l'} [fv'] S' /\                    *** untimed progression
-                        Some y == cv(l') /\                                             *** withdraw/split/put-reveal
-                        strategyT([t | t^ | fv] < A^ : D, v > y | S, l') .
-
-    crl [Sum] : [t | t^ | fv] < D + C, v > y | S => {l'} [t | t^ | fv'] S'
-                    if  [fv] < D, v > y | S => {l'} [fv'] S' /\
-                        Some y == cv(l') /\                                             *** withdraw/split/put-reveal
-                        strategyT([t | t^ | fv] < D + C, v > y | S, l') .
 
 endm
 
@@ -898,7 +854,7 @@ mod Example-1.0 is
     op S : -> SemConfiguration .
 
     *** deposit
-    eq S = [x] < A, v > x .
+    eq S = toSemConf < A, v > x .
 
     *** strategy
     ***     A does not authorize to destroy the deposit x
@@ -919,7 +875,7 @@ mod Example-1.1 is
     op S : -> SemConfiguration .
 
     *** 2 deposits
-    eq S = [x, y] < A, v > x | < A, v > x' | < B, v' > y | < B, v' > y' .
+    eq S = toSemConf < A, v > x | < A, v > x' | < B, v' > y | < B, v' > y' .
 
     *** strategy
     ***     A does not authorize to destroy any deposit, B does
@@ -939,13 +895,13 @@ mod Example-2.0 is
     op A : -> Participant .
     op v : -> Value .
     op x : -> Name .
-    op S : -> SemTConfiguration .
+    op S : -> SemConfiguration .
 
     *** deposit
-    eq S = [0 | 0 5 | x] < A, v > x .
+    eq S = [0 | 0 4 | x] < A, v > x .
 
     *** strategy
     ***     A does not authorize to destroy the deposit x
-    ***eq strategyT([t:Nat | t^:List{Nat<} | fv:Set{Name}] S:Configuration, destroy x) = false .
-    eq strategyT([t:Nat | t^:List{Nat<} | fv:Set{Name}] S:Configuration, A authorize-destroy-of x) = false .
+    ***eq strategy([t:Nat | t^:List{Nat<} | fv:Set{Name}] S:Configuration, destroy x) = false .
+    eq strategy([t:Nat | t^:List{Nat<} | fv:Set{Name}] S:Configuration, A authorize-destroy-of x) = t:Nat >= 5 .
 endm
