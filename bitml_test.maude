@@ -1,69 +1,69 @@
 cd /home/nicola/repositories/bitml-maude
 load bitml.maude
 
-mod BITML-SEM-TEST is 
-    protecting BITML-SEM .
-    ops A B A' B' : -> Participant .
-    ops x x' x'' : -> Name .
-    ops y y' y'' : -> Name .
-    ops z z' z'' : -> Name .
-    ops v v' v'' : -> Value .
-    ops a a' a'' : -> Secret .
-    ops b b' b'' : -> Secret .
-    ops x^ y^ z^ : -> List{Name} . 
-    ops v^ : -> List{Value} . 
-    ops a^ b^ : -> List{Secret} . 
-    ops t t' : -> Nat .
-    ops n n' N N' : -> Nat .
-    ops p p' p'' : -> Predicate .
-    ops C C' C'' : -> Contract .
-    ops D D' D'' : -> GuardedContract .
-    ops l l' l'' : -> Label .
-endm
-
-mod BITML-CHECK-TEST is 
-	protecting BITML-CHECK .
-	ops A B A' B' : -> Participant .
-	ops x x' x'' : -> Name .
-	ops y y' y'' : -> Name .
-	ops z z' z'' : -> Name .
-	ops v v' v'' : -> Value .
-	ops a a' a'' : -> Secret .
-	ops b b' b'' : -> Secret .
-	ops x^ y^ z^ : -> List{Name} . 
-	ops v^ : -> List{Value} . 
-	ops a^ b^ : -> List{Secret} . 
-    ops n n' N N' : -> Nat .
-	ops p p' p'' : -> Predicate .
-	ops C C' C'' : -> Contract .
-	ops D D' D'' : -> GuardedContract .
-	ops l l' l'' : -> Label .
-    ops S S' : -> Configuration .
-	
-	vars SS SS' : Configuration .
-	vars ll ll' : Label .
-	vars xx^ : List{Name} .
-    vars fv : List{Name} .
-    
-    ops Ex0 Ex1 Ex2 : -> Configuration .
-
-    eq Ex0 = < withdraw A , v(10) > x .     *** contract
-    eq Ex1 = < A , v(10) > x .              *** deposit
-    eq Ex2 = < split(                       *** split
-        v(1) ~> C
-        v(2) ~> C'
-        v(3) ~> (0).Contract
-    ), v(6) > x .
-
-endm
 
 cd /home/nicola/repositories/MUnit
 load mUnit.maude
 (munit BITML-CHECK-TEST is
-    assertEqual(put x . 0, put x reveal nil if true . 0)
-    assertEqual(put x if p . 0, put x reveal nil if p . 0)
-    assertEqual(reveal a . 0, put nil reveal a if true . 0)
-    assertEqual(reveal a if p . 0, put nil reveal a if p . 0)
+	***
+	***    assertEqual(t, t')
+	***
+	***        passes if both t and t' are reduced to the same normal form by means of equations.
+	***
+	***
+	***    assertDifferent(t, t')
+	***
+	***        passes if the normal forms of t and t' are different.
+	***
+	***
+	***    assertTrue(t)
+	***
+	***        passes if the normal form of t is true.
+	***
+	***
+	***    assertFalse(t)
+	***
+	***        passes if the normal form of t is false.
+	***
+	***
+	***    assertReachable(t, t')
+	***
+	***        passes if t' is reachable from t within an unbounded number of steps.
+	***
+	***
+	***    assertReachableBnd(t, t', bnd)
+	***
+	***        passes if t' is reachable from t within bnd steps.
+	***
+	***
+	***    hasSolution(t, pat, mode, bound, cond)}
+	***
+	***        passes when there exists at least one reachable term that, starting from t, matches the pattern pat and
+	***        fulfills the condition cond in at most bound (either unbounded or a natural number) steps. The mode can
+	***        be either *, for 0 or more steps; +, for 1 or more steps; and !, for final states.
+	***
+	***
+	***    noSolution(t, pat, mode, bound, cond)
+	***
+	***        passes when no reachable solution was expected from t, matching the pattern pat and fulfilling the condition cond in at most bound.
+	***
+
+    *** fresh(_)
+    assertEqual(fresh(empty), x("x_0"))
+    assertEqual(fresh(x("x_0")), x("x_1"))
+    assertEqual(fresh(x("x_0"),x("x_1")), x("x_2"))
+    assertEqual(fresh(x("x_1")), x("x_0"))
+    assertEqual(fresh(x("x_1"),x("x_2")), x("x_0"))
+    
+    *** fresh(_,_)
+    assertEqual(fresh(empty,3), x("x_0"), x("x_1"), x("x_2"))
+    assertEqual(fresh((x("x_1"), x("x_2")),3), x("x_0"), x("x_3"), x("x_4"))
+
+    assertEqual(tau . 0, put empty reveal empty if true . 0)
+    assertEqual(put x . 0, put x reveal empty if true . 0)
+    assertEqual(put x if p . 0, put x reveal empty if p . 0)
+    assertEqual(reveal a . 0, put empty reveal a if true . 0)
+    assertEqual(reveal a if p . 0, put empty reveal a if p . 0)
     assertEqual(put x reveal a . 0, put x reveal a if true . 0)
 	
     assertEqual(after 0 : D, D)
@@ -75,114 +75,102 @@ load mUnit.maude
     assertEqual((B, A) : D, (A, B) : D)
 
     assertEqual(names in (< 0 , v > x | < 0 , v > y) , (x, y)  )
-    assertEqual(ticks( < after 10 : tau . after 5 : tau . 0 , v > x ), (5 , 10)  )
-    assertEqual(toSemTConf (< 0 , v > x | < 0 , v > y) , [0 | nil | x,y] (< 0 , v > x | < 0 , v > y)  )
-
-    assertEqual(fresh(nil), x("x_0"))
-    assertEqual(fresh(x("x_0") x("x_1")), x("x_2"))
-    assertEqual(fresh(x("x_0") x("x_2")), x("x_1"))
-
-    assertEqual(fresh(nil,2), x("x_0") x("x_1"))
-    assertEqual(fresh(x("x_0") x("x_1"),2), x("x_2") x("x_3"))
-    assertEqual(fresh(x("x_0") x("x_2"),2), x("x_1") x("x_3"))
+    assertEqual(ticks( < after 10 : tau . after 5 : tau . 0 , v > x ), (5 10)  )
+    assertEqual(toSemConf (< 0 , v > x | < 0 , v > y) , [0 | nil | x,y] (< 0 , v > x | < 0 , v > y)  )
 
     assertEqual( (< (A, B) : D, v > x), < (A, B) : D, v > x )
 
     *** auth-destroy 
-    assertReachableBnd(
-        ([x] < A, v > x),
-        ({A authorize-destroy-of x} [x] < A, v > x | A[ x |># ]),
-        1)
+    assertReachableBnd((toSemConf < A, v > x), ({A authorize-destroy-of x} (ctx:Context < A, v > x | A[ x |># ])), 1)
+
     *** destroy
-    assertReachableBnd( ([x] < A, v > x), ({destroy x} [x] 0), 2)
+    assertReachableBnd( (toSemConf < A, v > x), ({destroy x} ctx:Context 0), 2)
+
     *** split
-    assertReachableBnd( 
-        ([x] < split(v' ~> C' v'' ~> C''), v > x), 
-        ({split x} [x x("x_0") x("x_1")] < C', v' > x("x_0") | < C'', v'' > x("x_1")), 
+    assertReachableBnd(
+        (toSemConf < split(v' ~> (withdraw A) v'' ~> (withdraw B)), v > x),
+        ({split x} [t:Nat | t^:List{Nat<} | x, x("x_0"), x("x_1")] < withdraw A, v' > x("x_0") | < withdraw B, v'' > x("x_1")),
         2)
+
     *** put
     assertReachableBnd(
-        ([x y] < put y . 0, v > x | < A, v' > y),
-        ({put(y,nil,x)} [x y x("x_0")] < 0, v > x("x_0")),
+        (toSemConf < put y . 0, v > x | < A, v' > y),
+        ({put(y,empty,x)} [t:Nat | t^:List{Nat<} | x, y, x("x_0")] < 0, v > x("x_0")),
         1)
     *** reveal
     assertReachableBnd(
-        ([x] < reveal a . 0, v > x | (A : a # N) ),
-        ({put(nil,a,x)} [x x("x_0")] < 0, v > x("x_0") | (A : a # N)),
+        (toSemConf < reveal a . 0, v > x | (A : a # N) ),
+        ({put(empty,a,x)} [t:Nat | t^:List{Nat<} | x, x("x_0")] < 0, v > x("x_0") | (A : a # N)),
         1)
     *** withdraw
     assertReachableBnd(
-        ([x] < withdraw A, v > x),
-        ({A withdraw v from x} [x x("x_0")] < A, v > x("x_0")),
+        (toSemConf < withdraw A, v > x),
+        ({A withdraw v from x} [t:Nat | t^:List{Nat<} | x, x("x_0")] < A, v > x("x_0")),
         1)
 
     *** sum
-    assertReachableBnd( ([x] < withdraw A + withdraw B, v > x), ({A withdraw v from x} [x x("x_0")] < A, v > x("x_0")), 1)
-    assertReachableBnd( ([x] < withdraw A + withdraw B, v > x), ({B withdraw v from x} [x x("x_0")] < B, v > x("x_0")), 1)
+    assertReachableBnd(
+        (toSemConf < withdraw A + withdraw B, v > x),
+        ({A withdraw v from x} [t:Nat | t^:List{Nat<} | x, x("x_0")] < A, v > x("x_0")),
+        1)
 
-    assertReachable( ([x] < tau . withdraw A + tau . withdraw B, v > x), 
-                     {put(nil,nil,x)} [x x("x_0")] < withdraw A, v > x("x_0"))  *** choose first tau
-    assertReachable( ([x] < tau . withdraw A + tau . withdraw B, v > x), 
-                     {put(nil,nil,x)} [x x("x_0")] < withdraw B, v > x("x_0"))  *** choose second tau
+    assertReachableBnd(
+        (toSemConf < withdraw A + withdraw B, v > x),
+        ({B withdraw v from x} [t:Nat | t^:List{Nat<} | x, x("x_0")] < B, v > x("x_0")),
+        1)
+
+    assertReachable(
+        (toSemConf < tau . withdraw A + tau . withdraw B, v > x), 
+         {put(empty,empty,x)} [t:Nat | t^:List{Nat<} | x, x("x_0")] < withdraw A, v > x("x_0"))  *** choose first tau
+ 
+    assertReachable(
+        (toSemConf < tau . withdraw A + tau . withdraw B, v > x), 
+         {put(empty,empty,x)} [t:Nat | t^:List{Nat<} | x, x("x_0")] < withdraw B, v > x("x_0"))  *** choose second tau
+ 
+    assertReachable(
+        (toSemConf < tau . withdraw A + tau . withdraw B, v > x),
+        {A withdraw v from x("x_0")} [t:Nat | t^:List{Nat<} | x, x("x_0"), x("x_1")] < A, v > x("x_1"))
+
+    assertReachable(
+        (toSemConf < tau . withdraw A + tau . withdraw B, v > x),
+        {B withdraw v from x("x_0")} [t:Nat | t^:List{Nat<} | x, x("x_0"), x("x_1")] < B, v > x("x_1"))
+
+    assertReachable(
+        (toSemConf < withdraw A + withdraw B, v > x),
+        {A withdraw v from x} [t:Nat | t^:List{Nat<} | x, x("x_0")] < A, v > x("x_0"))
+
+    assertReachable(
+        (toSemConf < withdraw A + withdraw B, v > x),
+        {B withdraw v from x} [t:Nat | t^:List{Nat<} | x, x("x_0")] < B, v > x("x_0"))
+
+    assertReachable(
+        (toSemConf < A : withdraw B, v > x),
+        {A authorize withdraw B in x} [t:Nat | t^:List{Nat<} | x] < A : withdraw B, v > x | A [ x |> A : withdraw B ])
+
+    assertReachable(
+        (toSemConf < A : withdraw B, v > x), 
+        {B withdraw v from x} [t:Nat | t^:List{Nat<} | x, x("x_0")] < B, v > x("x_0"))
+
+    assertReachable(
+        (toSemConf < A : withdraw B, v > x), 
+        {destroy x("x_0")} [t:Nat | t^:List{Nat<} | x, x("x_0")] 0)
     
-    assertReachable( ([x] < tau . withdraw A + tau . withdraw B, v > x), {A withdraw v from x("x_0")} [x x("x_0") x("x_1")] < A, v > x("x_1"))
-    assertReachable( ([x] < tau . withdraw A + tau . withdraw B, v > x), {B withdraw v from x("x_0")} [x x("x_0") x("x_1")] < B, v > x("x_1"))
-
-    assertReachable( (toSemTConf < withdraw A + withdraw B, v > x), {A withdraw v from x} [0 | nil | x x("x_0")] < A, v > x("x_0"))
-    assertReachable( (toSemTConf < withdraw A + withdraw B, v > x), {B withdraw v from x} [0 | nil | x x("x_0")] < B, v > x("x_0"))
-
-    assertReachable( ([0 | nil | x] < A : withdraw B, v > x), 
-                      {A authorize withdraw B in x} 
-                      [0 | nil | x] < A : withdraw B, v > x | A [ x |> A : withdraw B ])
-
-    assertReachable( ([0 | nil | x] < A : withdraw B, v > x), 
-                      {B withdraw v from x} 
-                      [0 | nil | x x("x_0")] < B, v > x("x_0"))
-
-    assertReachable( ([0 | nil | x] < A : withdraw B, v > x), 
-                      {destroy x("x_0")} 
-                      [0 | nil | x x("x_0")] 0)
-    
-    
-
-    *** predicates
-    assertTrue( 0 |= predicate true )
-    assertFalse( 0 |= predicate false )
-    assertTrue( 0 |= predicate true )
-
-    assertTrue( < reveal a . 0, v > x |= put-ok )
-    assertTrue( < put x . 0, v > x | < A, v > x |= put-ok )
-    assertFalse( (< put x . 0, v > x) |= put-ok )                       *** no deposit
-    assertFalse( (< put x . 0, v > x | < A, v > y) |= put-ok )          *** no deposit
-    assertFalse( (< put x if false . 0, v > x | < A, v > x) |= put-ok ) *** predicate is false    
 endu)
 
 
 
 
 ***(
-rewrite in BITML-SEM-TEST :
-    < A : after 2 : withdraw B, v > x
-    | A[x |> A : after 2 : withdraw B] .
-
-rewrite in BITML-SEM-TEST :
-    toSemTConf < put x reveal a if true . 0, v > y | {A : a # 10} | < A, v(10) > x .
-
-rewrite in BITML-SEM-TEST :
-    < put x . 0, v > y | < A, v(10) > x .
-
-rewrite in BITML-SEM-TEST : [x] < nil : after 5 : (withdraw B + withdraw A + withdraw A'), v > x .
 
 rewrite in BITML-SEM-TEST : < 0 (3 5).List{Nat<} > [x] < after 5 : tau . after 3 : withdraw B , v > x .
 
 rewrite in BITML-SEM-TEST :
-    < 0 nil >
-    [x("x_0")]
+    toSemConf
     < split(
         v(2) ~> ( reveal b if const(0) <= ref(b) <= const(1) . withdraw B + after t : withdraw A )
         v(2) ~> ( reveal a . withdraw A + after t : withdraw B )
         v(2) ~> ( reveal (a b) if | ref(a) | == | ref(b) | . withdraw A
-                + reveal (a b) if | ref(a) | != | ref(b) | . withdraw B ) ), v(6) > x("x_0") .
+                + reveal (a b) if | ref(a) | != | ref(b) | . withdraw B ) ), v(6) > x .
 )
 
 
