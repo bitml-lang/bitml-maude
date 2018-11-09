@@ -888,6 +888,27 @@ mod Example-1.1 is
 endm
 
 ***
+*** Example 1.1
+***
+***     rewrite in Example-1.1 : S .
+***
+mod Example-1.1 is
+    protecting BITML .
+
+    op A : -> Participant .
+    op v : -> Value .
+    op x : -> Name .
+    op S : -> SemConfiguration .
+
+    *** deposit
+    eq S = toSemConf < A, v > x .
+
+    *** strategy
+    ***     block everything
+    eq strategy(S:SemConfiguration, l:Label) = false [owise] .
+endm
+
+***
 *** Example 2.0
 ***
 ***     rewrite in Example-2.0 : S .
@@ -905,6 +926,6 @@ mod Example-2.0 is
 
     *** strategy
     ***     A does not authorize to destroy the deposit x
-    ***eq strategy([t:Nat | t^:List{Nat<} | fv:Set{Name}] S:Configuration, destroy x) = false .
     eq strategy([t:Nat | t^:List{Nat<} | fv:Set{Name}] S:Configuration, A authorize-destroy-of x) = t:Nat >= 5 .
 endm
+
