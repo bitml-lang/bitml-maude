@@ -408,8 +408,19 @@ fmod BITML-UTILS is
     ***
     sort Option None Some .
     subsorts None Some < Option .
-    op None : -> None [ctor].
-    op Some_ : Universal -> Some [ctor poly(1)].
+    op None : -> None [ctor] .
+    op Some_ : Universal -> Some [ctor poly(1)] .
+
+
+    ***
+    *** Try
+    ***     Success(Any)
+    ***     Failure(String)
+    ***
+    sort Try Success Failure .
+    subsorts Success Failure < Try .
+    op Success : Universal -> Success [ctor poly(1)] .
+    op Failure : String -> Failure [ctor] .
 
     ***
     *** Convert Some(Configuration) to Configuration
@@ -499,7 +510,8 @@ fmod BITML-PREDICATE-SAT is
 
     op predicate_ : Predicate -> Prop .
 
-    var p p' : Predicate .
+    var b b' : Bool .
+    var P P' : Predicate .
     var S S' : Configuration .
     var a : Secret .
     var n m : Int .
@@ -507,39 +519,41 @@ fmod BITML-PREDICATE-SAT is
     var A : Participant .
     vars E E' E'' : Expression .
 
-    eq S |= predicate p = $eval p [ S ] .
-    ceq S | S' |= predicate p = S |= predicate p or-else S' |= predicate p if S =/= 0 /\ S' =/= 0 .
-    eq S |= predicate p = false [owise] .
+    eq S |= predicate P = $eval P [ S ] == Success((true).True) .
+    ceq S | S' |= predicate P = S |= predicate P or-else S' |= predicate P if S =/= 0 /\ S' =/= 0 .
+    eq S |= predicate P = false [owise] .
 
-    op $eval_[_] : Predicate Configuration -> Bool .
-    eq $eval p && p' [ S ] = $eval p [ S ] and-then $eval p' [ S ] .
-    eq $eval p || p' [ S ] = $eval p [ S ] or-else $eval p' [ S ] .
-    eq $eval ! p [ S ] = not ( $eval p [ S ] ) .
-    eq $eval E != E' [ S ] = $eval E [ S ] =/= $eval E' [ S ] .
-    eq $eval E == E' [ S ] = $eval E [ S ] == $eval E' [ S ] .
-    eq $eval E < E' [ S ] = $eval E [ S ] < $eval E' [ S ] .
-    eq $eval E <= E' [ S ] = $eval E [ S ] <= $eval E' [ S ] .
-    eq $eval E > E' [ S ] = $eval E [ S ] > $eval E' [ S ] .
-    eq $eval E >= E' [ S ] = $eval E [ S ] >= $eval E' [ S ] .
-    eq $eval true [ S ] = true .
-    eq $eval false [ S ] = false .
+    op $eval_[_] : Predicate Configuration -> Try .
+    ceq $eval P && P' [ S ] = Success(b and b') if Success(b) := $eval P [ S ] /\ Success(b') := $eval P' [ S ] .
+    ceq $eval P || P' [ S ] = Success(b or b') if Success(b) := $eval P [ S ] /\ Success(b') := $eval P' [ S ] .
+    ceq $eval ! P [ S ] = Success(not b) if Success(b) := $eval P [ S ] .
+    ceq $eval E != E' [ S ] = Success(n =/= m) if Success(n) := $eval E [ S ] /\ Success(m) := $eval E' [ S ] .
+    ceq $eval E == E' [ S ] = Success(n == m) if Success(n) := $eval E [ S ] /\ Success(m) := $eval E' [ S ] .
+    ceq $eval E < E' [ S ] = Success(n < m) if Success(n) := $eval E [ S ] /\ Success(m) := $eval E' [ S ] .
+    ceq $eval E <= E' [ S ] = Success(n <= m) if Success(n) := $eval E [ S ] /\ Success(m) := $eval E' [ S ] .
+    ceq $eval E > E' [ S ] = Success(n > m) if Success(n) := $eval E [ S ] /\ Success(m) := $eval E' [ S ] .
+    ceq $eval E >= E' [ S ] = Success(n >= m) if Success(n) := $eval E [ S ] /\ Success(m) := $eval E' [ S ] .
+    eq $eval true [ S ] = Success((true).True) .
+    eq $eval false [ S ] = Success((false).False) .
     
-    op $eval_[_] : Expression Configuration -> Int .
-    eq $eval const(n) [ S ] = n .
-    eq $eval | ref(a) | [ (A : a # N) | S ] = N .
-    ceq $eval | E | [ S ] = rat( ceiling( (log(float(n))) / (log(float(2))) / 7.0 ) ) if n := $eval E [ S ].
-    eq $eval E + E' [ S ] = $eval E [ S ] + $eval E' [ S ] .
-    eq $eval E - E' [ S ] = $eval E [ S ] + - $eval E' [ S ] .
+    op $eval_[_] : Expression Configuration -> Try .
+    eq $eval const(n) [ S ] = Success(n) .
+    eq $eval | ref(a) | [ (A : a # N) | S ] = Success(N) .
+    ceq $eval | E | [ S ] = Success(rat( ceiling( (log(float(n))) / (log(float(2))) / 7.0 ) ) ) if Success(n) := $eval E [ S ] .
+    ceq $eval E + E' [ S ] = Success(n + m) if Success(n) := $eval E [ S ] /\ Success(m) := $eval E' [ S ] .
+    ceq $eval E - E' [ S ] = Success(n + - m) if Success(n) := $eval E [ S ] /\ Success(m) := $eval E' [ S ] .
+
+    eq $eval E [ S ] = Failure("Unable to evaluate the expression") [owise] .
 
     ***
     *** Simplifications
     ***
     eq ! (true).True = (false).False .
     eq ! (false).False = (true).True .
-    eq (true).True || p = (true).True .
-    eq (false).False && p = (false).False .
-    eq (false).False || p = p .
-    eq (true).True && p = p .
+    eq (true).True || P = (true).True .
+    eq (false).False && P = (false).False .
+    eq (false).False || P = P .
+    eq (true).True && P = P .
     eq const(n) + const(m) = const(n + m) .
     eq const(n) - const(m) = const(n + (- m)) .
     eq const(n) < const(m) = if n < m then (true).True else (false).False fi .
@@ -929,3 +943,42 @@ mod Example-2.0 is
     eq strategy([t:Nat | t^:List{Nat<} | fv:Set{Name}] S:Configuration, A authorize-destroy-of x) = t:Nat >= 5 .
 endm
 
+***
+*** Example Example-LOTTERY
+***
+***     rewrite in Example-LOTTERY : S(WIN) .
+***
+mod Example-LOTTERY is
+    protecting BITML .
+
+    ops A B : -> Participant .
+    op v : -> Value .
+    op x : -> Name .
+    ops a b : -> Secret .
+    ops t t' N : -> Nat .
+    op S : Contract -> SemConfiguration .
+    ops WIN WIN' : -> Contract .
+
+    eq t = 10 .
+    eq t' = 15 .
+
+    *** lottery
+    eq S(WIN:Contract) = 
+        toSemConf
+	    < split(
+	        v(2) ~> ( reveal b if const(0) <= | ref(b) | <= const(1) . withdraw B + after t : withdraw A )
+	        v(2) ~> ( reveal a . withdraw A + after t : withdraw B )
+	        v(2) ~> WIN:Contract
+            ), v(6) > x
+        | { A : a # N } .
+
+    eq WIN = reveal (a, b) if | ref(a) | == | ref(b) | . withdraw A
+           + reveal (a, b) if | ref(a) | != | ref(b) | . withdraw B .
+
+    eq WIN' = WIN
+            + (after t' : reveal a . withdraw A)
+            + (after t' : reveal b . withdraw B) .
+
+    *** strategy
+    eq strategy(S:SemConfiguration, l:Label) = false [owise] .
+endm

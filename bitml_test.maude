@@ -65,7 +65,13 @@ load mUnit.maude
     assertEqual(reveal a . 0, put empty reveal a if true . 0)
     assertEqual(reveal a if p . 0, put empty reveal a if p . 0)
     assertEqual(put x reveal a . 0, put x reveal a if true . 0)
-	
+
+    *** $eval e [S]
+    assertEqual($eval const(42) [S:Configuration], Success(42))
+    assertEqual($eval const(42) + const(1) [S:Configuration], Success(43))
+    assertEqual($eval | ref(a:Secret) | [ A:Participant : a:Secret # 10  | S:Configuration], Success(10))
+    assertEqual($eval | ref(a:Secret) | [{A:Participant : a:Secret # 10} | S:Configuration], Failure("Unable to evaluate the expression"))
+    
     assertEqual(after 0 : D, D)
     assertEqual(after 5 : after 10 : D, after 10 : D)
 
@@ -156,21 +162,3 @@ load mUnit.maude
         {destroy x("x_0")} [t:Nat | t^:List{Nat<} | x, x("x_0")] 0)
     
 endu)
-
-
-
-
-***(
-
-rewrite in BITML-SEM-TEST : < 0 (3 5).List{Nat<} > [x] < after 5 : tau . after 3 : withdraw B , v > x .
-
-rewrite in BITML-SEM-TEST :
-    toSemConf
-    < split(
-        v(2) ~> ( reveal b if const(0) <= ref(b) <= const(1) . withdraw B + after t : withdraw A )
-        v(2) ~> ( reveal a . withdraw A + after t : withdraw B )
-        v(2) ~> ( reveal (a b) if | ref(a) | == | ref(b) | . withdraw A
-                + reveal (a b) if | ref(a) | != | ref(b) | . withdraw B ) ), v(6) > x .
-)
-
-
