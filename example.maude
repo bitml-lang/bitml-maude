@@ -1,0 +1,47 @@
+mod BLACKBOARD is
+  pr NAT .
+  sort Blackboard .
+  subsort Nat < Blackboard .
+
+  op __ : Blackboard Blackboard -> Blackboard [assoc comm] .
+
+  op minimum : Blackboard -> Nat .
+  op maximum : Blackboard -> Nat .
+  op remove : Nat Blackboard -> Blackboard .
+
+  vars M N X : Nat .
+  var B : Blackboard .
+
+  eq minimum(N) = N .
+  eq minimum(N M) = if (N < M) then N else M fi . 
+  eq minimum(N M B) = if (N < M) then minimum(N B) 
+                                 else minimum(M B) fi .
+  eq maximum(N) = N .
+  eq maximum(N M) = if (N > M) then N else M fi . 
+  eq maximum(N M B) = if (N > M) then maximum(N B) 
+                                 else maximum(M B) fi .
+  eq remove(X, X B) = B .
+  eq remove(X, B) = B [owise] .
+
+  rl [play] : M N => (M + N) quo 2 .
+endm
+
+smod BLACKBOARD-STRAT is
+  protecting BLACKBOARD .
+
+  strat minmin @ Blackboard .
+  strat maxmax @ Blackboard .
+
+  vars X Y M N : Nat .
+  var  B : Blackboard .
+
+  sd minmin := 
+     (matchrew B s.t. X := minimum(B) /\ Y := minimum(remove(X,B)) by
+              B using play[M <- X , N <- Y] 
+     ) ! .
+
+  sd maxmax := 
+     (matchrew B s.t. X := maximum(B) /\ Y := maximum(remove(X,B)) by
+              B using play[M <- X , N <- Y] 
+     ) ! .
+endsm

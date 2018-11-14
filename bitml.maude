@@ -643,7 +643,7 @@ mod BITML-SEM is
     eq cv(l) = None [owise].
 
     *** strategies
-    op strategy : SemConfiguration Label -> Bool .
+    op strategy : SemConfiguration Label -> Bool [memo] .
     eq strategy(S:SemConfiguration, l) = true [owise] .         *** default: all moves are enabled
 
     *** Allow progression of labelled configuration (timed)
@@ -659,10 +659,10 @@ mod BITML-SEM is
 
     rl [Dep-Destroy] : [t | t^ | fv] < A , v > x | A [ x |># ] | S => { destroy x } [t | t^ | fv] S .
 
-    crl [C-Split] : [t | t^ | fv] < (split (splitEntries) ), v > y | S => { split(y) } [t | t^ | fv, fv'] ((|| splitEntries fv') | S ) 
+    crl [C-Split] : [t | t^ | fv] < (split (splitEntries) ) + C, v > y | S => { split(y) } [t | t^ | fv, fv'] ((|| splitEntries fv') | S )
                     if fv' := fresh(fv,size(splitEntries)) .
 
-    crl [C-PutReveal] : [t | t^ | fv] (< (put (x^) reveal a^ if p . C), v > y | S) => { put(x^,a^,y) } [t | t^ | fv, z] ( < C, v > z | S'')
+    crl [C-PutReveal] : [t | t^ | fv] (< (put x^ reveal a^ if p . C) + C', v > y | S) => { put(x^,a^,y) } [t | t^ | fv, z] ( < C, v > z | S'')
                     if  z := fresh(fv) /\ 
                         Some (S' S'') := (deposits x^ S) /\ *** fetch all deposits x^ in S (S' are deposits in S, S'' == S \ S')
                         Some S''' := (secrets a^ S'') /\    *** fetch all secrets a^ in S
@@ -671,126 +671,54 @@ mod BITML-SEM is
     crl [C-AuthRev] : [t | t^ | fv] {A : a # N} | S => { A reveal a } [t | t^ | fv] (A : a # N | S) 
                     if  strategy([t | t^ | fv] {A : a # N} | S, A reveal a) .
 
-    crl [C-Withdraw] : [t | t^ | fv] < withdraw A, v > y | S => { A withdraw v from y } [t | t^ | fv, z] (< A, v > z | S)
+    crl [C-Withdraw] : [t | t^ | fv] < withdraw A + C, v > y | S => { A withdraw v from y } [t | t^ | fv, z] (< A, v > z | S)
                     if  z := fresh(fv) .
 
-    crl [C-AuthControl] : [t | t^ | fv] < (A, A^) : D, v > y | S => { A authorize D in y } [t | t^ | fv] (< (A, A^) : D, v > y | A [ y |> (A, A^) : D ] | S)
+    crl [C-AuthControl] : [t | t^ | fv] < (A, A^) : D + C, v > y | S => { A authorize D in y } [t | t^ | fv] (< (A, A^) : D, v > y | A [ y |> (A, A^) : D ] | S)
                     if  strategy([t | t^ | fv] < (A, A^) : D, v > y | S, A authorize D in y) /\
                         None := (searchAuth A ((A, A^) : D) y S) .  *** check that branch D is not already authorized by A
 
-    crl [C-Control] : [t | t^ | fv] < A^ : after t' : D, v > y | S => {l'} [t | t^ | fv'] S'
+    crl [C-Control] : [t | t^ | fv] < A^ : after t' : D + C, v > y | S => {l'} [t | t^ | fv'] S'
                     if  t >= t' /\                                                      *** timelocks satisfied
                         Some (S'' S''') := (searchAuth A^ (A^ : after t' : D) y S) /\   *** S'' are authorizations, S''' ==  S \ S''
                         [t | t^ | fv] < D, v > y | S''' => {l'} [t | t^ | fv'] S' /\
                         Some y == cv(l') .                                              *** withdraw/split/put-reveal
 
-    crl [C-Control] : [t | t^ | fv] < after t' : D, v > y | S => {l'} [t | t^ | fv'] S'
+    crl [C-Control] : [t | t^ | fv] < after t' : D + C, v > y | S => {l'} [t | t^ | fv'] S'
                     if  t >= t' /\                                                      *** timelocks satisfied
                         [t | t^ | fv] < D, v > y | S => {l'} [t | t^ | fv'] S' /\       *** D progresses
                         Some y == cv(l') .                                              *** withdraw/split/put-reveal
 
-    crl [C-Control] : [t | t^ | fv] < A^ : D, v > y | S => {l'} [t | t^ | fv'] S'
+    crl [C-Control] : [t | t^ | fv] < A^ : D + C, v > y | S => {l'} [t | t^ | fv'] S'
                     if  Some (S'' S''') := (searchAuth A^ (A^ : D) y S) /\              *** S'' are authorizations, S''' == S \ S''
                         [t | t^ | fv] < D, v > y | S''' => {l'} [t | t^ | fv'] S' /\    *** D progresses
                         Some y == cv(l') .                                              *** withdraw/split/put-reveal
-
-    crl [C-Sum] : [t | t^ | fv] < D + C, v > y | S => {l'} [t | t^ | fv'] S'
-                    if  C =/= 0 /\
-                        [t | t^ | fv] < D, v > y | S => {l'} [t | t^ | fv'] S' .
 
     crl [Delay] : [t | t^ | fv] S => {delta (t' + - t)} [t' | t'^ | fv] S 
                     if t^ =/= nil /\ t' := head(t^) /\ t'^ := tail(t^) .
 
 endm
 
-***(mod BITML-PREDS is
-    protecting BITML-FREENAME .
-    protecting BITML-SEM .
-    protecting SATISFACTION .
-    subsort Configuration LSemConfiguration LSemTConfiguration < State .
-
-    var A B A' B' A'' B'' : Participant .
-    var C C' : Contract .
-    var D D' : GuardedContract .
-    vars v v' v'' v''' : Value .
-    vars x y z x' y' z' x'' y'' z'' : Name .
-    vars x^ y^ : List{Name} .
-    vars a^ : List{Secret} .
-    vars v^ : List{Value} .
-    vars A^ B^ : Set{Participant} .
-    vars n^ N^ : List{Nat<} .
-    vars t^ t'^ : Set{Nat<} .
-    vars S S' S'' S''' P P' : Configuration .
-    var LConf : LSemConfiguration .
-    var LTConf : LSemTConfiguration .
-    vars a a' : Secret .
-    vars n n' N t t' : Nat .
-    vars s s' : Secret .
-    vars s^ : List{Secret} .
-    vars l l' : Label .
-    vars fv fv' : List{Name} .
-    var splitEntries : List{SplitEntry} .
-    vars p p' : Predicate .
-    vars putDeps putSecs : Option .
-    
-    *** check that all free names in S are in [fv], and viceversa
-    op fvAreTraced : -> Prop .
-    eq S |= fvAreTraced = [(names in S)] S |= fvAreTraced .
-    eq [fv] S |= fvAreTraced = fv == names in S .
-    eq [t | t^ | fv] S |= fvAreTraced = [fv] S |= fvAreTraced .
-    eq {l} [fv] S |= fvAreTraced = [fv] S |= fvAreTraced .
-    eq {l} [t | t^ | fv] S |= fvAreTraced = [fv] S |= fvAreTraced .
-    ceq [fv] S | S' |= fvAreTraced = [fv] S |= fvAreTraced or-else [fv] S' |= fvAreTraced if S =/= 0 /\ S' =/= 0 .
-    eq [t | t^ | fv] S | S' |= fvAreTraced = S | S' |= fvAreTraced .
-    eq {l} [t | t^ | fv] S | S' |= fvAreTraced = S | S' |= fvAreTraced .
-    eq LConf |= fvAreTraced = false [owise] .
-    eq LTConf |= fvAreTraced = false [owise] .
-
-    *** check for an empty contract
-    op emptySum : -> Prop .
-    eq < (0).Contract, v > x |= emptySum = true .
-    eq [fv] S |= emptySum = S |= emptySum .
-    eq [t | t^ | fv] S |= emptySum = S |= emptySum .
-    eq {l} [fv] S |= emptySum = S |= emptySum .
-    eq {l} [t | t^ | fv] S |= emptySum = S |= emptySum .
-    ceq S | S' |= emptySum = S |= emptySum or-else S' |= emptySum if S =/= 0 /\ S' =/= 0 .
-    eq [fv] S | S' |= emptySum = S | S' |= emptySum .
-    eq [t | t^ | fv] S | S' |= emptySum = S | S' |= emptySum .
-    eq {l} [t | t^ | fv] S | S' |= emptySum = S | S' |= emptySum .
-    eq LConf |= emptySum = false [owise] .
-    eq LTConf |= emptySum = false [owise] .
-
-    *** check for contracts or deposits with zero-value
-    op zeroValue : -> Prop .
-    eq < A, v(0) > x |= zeroValue = true .
-    eq < C, v(0) > x |= zeroValue = true .
-    eq [fv] S |= zeroValue = S |= zeroValue .
-    eq [t | t^ | fv] S |= zeroValue = S |= zeroValue .
-    eq {l} [fv] S |= zeroValue = S |= zeroValue .
-    eq {l} [t | t^ | fv] S |= zeroValue = S |= zeroValue .
-    ceq S | S' |= zeroValue = S |= zeroValue or-else S' |= zeroValue if S =/= 0 /\ S' =/= 0 .
-    eq [fv] S | S' |= zeroValue = S | S' |= zeroValue .
-    eq [t | t^ | fv] S | S' |= zeroValue = S | S' |= zeroValue .
-    eq {l} [t | t^ | fv] S | S' |= zeroValue = S | S' |= zeroValue .
-    eq LConf |= zeroValue = false [owise] .
-    eq LTConf |= zeroValue = false [owise] .
-
-    op put-ok : -> Prop .
-    ceq < put x^ reveal a^ if p . C + C', v > x | S |= put-ok = true if (S |= predicate p) /\ deposits x^ S =/= None .
-    eq [fv] S |= put-ok = S |= put-ok .
-    eq [t | t^ | fv] S |= put-ok = S |= put-ok .
-    eq {l} [fv] S |= put-ok = S |= put-ok .
-    eq {l} [t | t^ | fv] S |= put-ok = S |= put-ok .
-    eq S |= put-ok = false [owise] .
-    eq LConf |= put-ok = false [owise] .
-    eq LTConf |= put-ok = false [owise] .    
-endm)
-
 mod BITML-CHECK is
-***    including BITML-PREDS .
     protecting BITML-SEM .    
+    protecting SATISFACTION .
     including MODEL-CHECKER .
     including LTL-SIMPLIFIER .
+
+    subsort SemConfiguration < State .
+    op frozen : -> Prop .
+
+    var C : Contract .
+    var v : Value .
+    var x : Name .
+    var S : Configuration .
+    var t : Nat .
+    var t^ : List{Nat<} .
+    var fv : Set{Name} .
+
+    eq < C, v > x | S |= frozen = C == 0 .
+    eq [t | t^ | fv ] S |= frozen = S |= frozen .
+    eq S:SemConfiguration |= frozen = false [owise] .
 endm
 
 mod BITML is
@@ -902,11 +830,11 @@ mod Example-1.1 is
 endm
 
 ***
-*** Example 1.1
+*** Example 1.2
 ***
-***     rewrite in Example-1.1 : S .
+***     rewrite in Example-1.2 : S .
 ***
-mod Example-1.1 is
+mod Example-1.2 is
     protecting BITML .
 
     op A : -> Participant .
@@ -955,7 +883,7 @@ mod Example-LOTTERY is
     op v : -> Value .
     op x : -> Name .
     ops a b : -> Secret .
-    ops t t' N : -> Nat .
+    ops t t' N M : -> Nat .
     op S : Contract -> SemConfiguration .
     ops WIN WIN' : -> Contract .
 
@@ -970,7 +898,8 @@ mod Example-LOTTERY is
 	        v(2) ~> ( reveal a . withdraw A + after t : withdraw B )
 	        v(2) ~> WIN:Contract
             ), v(6) > x
-        | { A : a # N } .
+        | { A : a # N } 
+        | { B : b # M } .
 
     eq WIN = reveal (a, b) if | ref(a) | == | ref(b) | . withdraw A
            + reveal (a, b) if | ref(a) | != | ref(b) | . withdraw B .
@@ -981,4 +910,10 @@ mod Example-LOTTERY is
 
     *** strategy
     eq strategy(S:SemConfiguration, l:Label) = false [owise] .
+    eq strategy(S:SemConfiguration, A reveal a) = true .
+endm
+
+mod Example-LOTTERY-CHECK is
+    protecting BITML-CHECK .
+    protecting Example-LOTTERY .
 endm
