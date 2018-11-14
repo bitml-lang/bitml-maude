@@ -132,7 +132,7 @@ fmod BITML-SYNTAX is
     protecting SORTABLE-LIST{Nat<} .
     protecting LIST{Value} .
 
-    op v(_) : Nat -> Value [ctor format (d d b! o d)] .                                     *** v(0) v(1) ...
+    op _BTC : Nat -> Value [ctor prec 5] .                                                  *** n BTC
     op _~>_ : Value Contract -> SplitEntry [ctor prec 5 frozen format (ni d ++ --)] .       *** v' -> C
     op <_,_> : Participant Value -> AnonDeposit [ctor prec 5 frozen format (d d d s d d)] . *** <A,v>
     op <_,_> : Contract Value -> AnonContract [ctor prec 5 frozen format (d d d s d d)] .   *** <C,v>
@@ -390,14 +390,16 @@ fmod BITML-UTILS is
     
     *** Sum for values
     op _+_ : Value Value -> Value [memo] .
-    eq v(n) + v(n') = v (n + n') .
+    eq n BTC + n' BTC = (n + n') BTC .
     
     ***
     *** Return the total amount value of a list of split entries
     ***
     op value(_) : List{SplitEntry} -> Value [memo] .
-    eq value(nil) = v(0) .
-    eq value(v ~> C tail) = v + value(tail) .
+    op $value(_,_) : List{SplitEntry} Nat -> Value [memo] .
+    eq value(sel) = $value(sel,0) .
+    eq $value(nil,n) = 0 BTC .
+    eq $value(n BTC ~> C tail,n') = $value(tail, n + n') .
 
     ***
     *** Option
@@ -762,23 +764,6 @@ mod BITML-CHECK-TEST is
     ops D D' D'' : -> GuardedContract .
     ops l l' l'' : -> Label .
     ops S S' : -> Configuration .
-    
-    vars ctx ctx' : Context .
-    vars SS SS' : Configuration .
-    vars ll ll' : Label .
-    vars xx^ : Set{Name} .
-    vars fv : Set{Name} .
-    
-    ops Ex0 Ex1 Ex2 : -> Configuration .
-
-    eq Ex0 = < withdraw A , v(10) > x .     *** contract
-    eq Ex1 = < A , v(10) > x .              *** deposit
-    eq Ex2 = < split(                       *** split
-        v(1) ~> C
-        v(2) ~> C'
-        v(3) ~> (0).Contract
-    ), v(6) > x .
-
 endm
 
 
@@ -892,10 +877,10 @@ mod Example-LOTTERY is
     eq S(WIN:Contract) = 
         toSemConf
 	    < split(
-	        v(2) ~> ( reveal b if const(0) <= | ref(b) | <= const(1) . withdraw B + after t : withdraw A )
-	        v(2) ~> ( reveal a . withdraw A + after t : withdraw B )
-	        v(2) ~> WIN:Contract
-            ), v(6) > x
+	        2 BTC ~> ( reveal b if const(0) <= | ref(b) | <= const(1) . withdraw B + after t : withdraw A )
+	        2 BTC ~> ( reveal a . withdraw A + after t : withdraw B )
+	        2 BTC ~> WIN:Contract
+            ), 6 BTC > x
         | { A : a # N } 
         | { B : b # M } .
 
