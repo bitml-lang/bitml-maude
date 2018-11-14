@@ -49,15 +49,15 @@ load mUnit.maude
 	***
 
     *** fresh(_)
-    assertEqual(fresh(empty), x("x_0"))
-    assertEqual(fresh(x("x_0")), x("x_1"))
-    assertEqual(fresh(x("x_0"),x("x_1")), x("x_2"))
-    assertEqual(fresh(x("x_1")), x("x_0"))
-    assertEqual(fresh(x("x_1"),x("x_2")), x("x_0"))
+    assertEqual(fresh(empty), 'x0)
+    assertEqual(fresh('x0), 'x1)
+    assertEqual(fresh('x0,'x1), 'x2)
+    assertEqual(fresh('x1), 'x0)
+    assertEqual(fresh('x1,'x2), 'x0)
     
     *** fresh(_,_)
-    assertEqual(fresh(empty,3), x("x_0"), x("x_1"), x("x_2"))
-    assertEqual(fresh((x("x_1"), x("x_2")),3), x("x_0"), x("x_3"), x("x_4"))
+    assertEqual(fresh(empty,3), 'x0, 'x1, 'x2)
+    assertEqual(fresh(('x1, 'x2),3), 'x0, 'x3, 'x4)
 
     assertEqual(tau . 0, put empty reveal empty if true . 0)
     assertEqual(put x . 0, put x reveal empty if true . 0)
@@ -95,59 +95,59 @@ load mUnit.maude
     *** split
     assertReachableBnd(
         (toSemConf < split(v' ~> (withdraw A) v'' ~> (withdraw B)), v > x),
-        ({split x} [t:Nat | t^:List{Nat<} | x, x("x_0"), x("x_1")] < withdraw A, v' > x("x_0") | < withdraw B, v'' > x("x_1")),
+        ({split x} [t:Nat | t^:List{Nat<} | x, 'x0, 'x1] < withdraw A, v' > 'x0 | < withdraw B, v'' > 'x1),
         2)
 
     *** put
     assertReachableBnd(
         (toSemConf < put y . 0, v > x | < A, v' > y),
-        ({put(y,empty,x)} [t:Nat | t^:List{Nat<} | x, y, x("x_0")] < 0, v > x("x_0")),
+        ({put(y,empty,x)} [t:Nat | t^:List{Nat<} | x, y, 'x0] < 0, v > 'x0),
         1)
     *** reveal
     assertReachableBnd(
         (toSemConf < reveal a . 0, v > x | (A : a # N) ),
-        ({put(empty,a,x)} [t:Nat | t^:List{Nat<} | x, x("x_0")] < 0, v > x("x_0") | (A : a # N)),
+        ({put(empty,a,x)} [t:Nat | t^:List{Nat<} | x, 'x0] < 0, v > 'x0 | (A : a # N)),
         1)
     *** withdraw
     assertReachableBnd(
         (toSemConf < withdraw A, v > x),
-        ({A withdraw v from x} [t:Nat | t^:List{Nat<} | x, x("x_0")] < A, v > x("x_0")),
+        ({A withdraw v from x} [t:Nat | t^:List{Nat<} | x, 'x0] < A, v > 'x0),
         1)
 
     *** sum
     assertReachableBnd(
         (toSemConf < withdraw A + withdraw B, v > x),
-        ({A withdraw v from x} [t:Nat | t^:List{Nat<} | x, x("x_0")] < A, v > x("x_0")),
+        ({A withdraw v from x} [t:Nat | t^:List{Nat<} | x, 'x0] < A, v > 'x0),
         1)
 
     assertReachableBnd(
         (toSemConf < withdraw A + withdraw B, v > x),
-        ({B withdraw v from x} [t:Nat | t^:List{Nat<} | x, x("x_0")] < B, v > x("x_0")),
+        ({B withdraw v from x} [t:Nat | t^:List{Nat<} | x, 'x0] < B, v > 'x0),
         1)
 
     assertReachable(
         (toSemConf < tau . withdraw A + tau . withdraw B, v > x), 
-         {put(empty,empty,x)} [t:Nat | t^:List{Nat<} | x, x("x_0")] < withdraw A, v > x("x_0"))  *** choose first tau
+         {put(empty,empty,x)} [t:Nat | t^:List{Nat<} | x, 'x0] < withdraw A, v > 'x0)  *** choose first tau
  
     assertReachable(
         (toSemConf < tau . withdraw A + tau . withdraw B, v > x), 
-         {put(empty,empty,x)} [t:Nat | t^:List{Nat<} | x, x("x_0")] < withdraw B, v > x("x_0"))  *** choose second tau
+         {put(empty,empty,x)} [t:Nat | t^:List{Nat<} | x, 'x0] < withdraw B, v > 'x0)  *** choose second tau
  
     assertReachable(
         (toSemConf < tau . withdraw A + tau . withdraw B, v > x),
-        {A withdraw v from x("x_0")} [t:Nat | t^:List{Nat<} | x, x("x_0"), x("x_1")] < A, v > x("x_1"))
+        {A withdraw v from 'x0} [t:Nat | t^:List{Nat<} | x, 'x0, 'x1] < A, v > 'x1)
 
     assertReachable(
         (toSemConf < tau . withdraw A + tau . withdraw B, v > x),
-        {B withdraw v from x("x_0")} [t:Nat | t^:List{Nat<} | x, x("x_0"), x("x_1")] < B, v > x("x_1"))
+        {B withdraw v from 'x0} [t:Nat | t^:List{Nat<} | x, 'x0, 'x1] < B, v > 'x1)
 
     assertReachable(
         (toSemConf < withdraw A + withdraw B, v > x),
-        {A withdraw v from x} [t:Nat | t^:List{Nat<} | x, x("x_0")] < A, v > x("x_0"))
+        {A withdraw v from x} [t:Nat | t^:List{Nat<} | x, 'x0] < A, v > 'x0)
 
     assertReachable(
         (toSemConf < withdraw A + withdraw B, v > x),
-        {B withdraw v from x} [t:Nat | t^:List{Nat<} | x, x("x_0")] < B, v > x("x_0"))
+        {B withdraw v from x} [t:Nat | t^:List{Nat<} | x, 'x0] < B, v > 'x0)
 
     assertReachable(
         (toSemConf < A : withdraw B, v > x),
@@ -155,10 +155,10 @@ load mUnit.maude
 
     assertReachable(
         (toSemConf < A : withdraw B, v > x), 
-        {B withdraw v from x} [t:Nat | t^:List{Nat<} | x, x("x_0")] < B, v > x("x_0"))
+        {B withdraw v from x} [t:Nat | t^:List{Nat<} | x, 'x0] < B, v > 'x0)
 
     assertReachable(
         (toSemConf < A : withdraw B, v > x), 
-        {destroy x("x_0")} [t:Nat | t^:List{Nat<} | x, x("x_0")] 0)
+        {destroy 'x0} [t:Nat | t^:List{Nat<} | x, 'x0] 0)
     
 endu)

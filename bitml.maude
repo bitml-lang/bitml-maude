@@ -5,6 +5,7 @@ fmod BITML-SORTS is
     protecting STRING .
     protecting CONVERSION .
     protecting EXT-BOOL .   *** for short-circuit operations _and-then_ _or-else_
+    protecting QID .
 
     sort Participant .      *** A B
     sort Value .            *** v v'
@@ -13,6 +14,7 @@ fmod BITML-SORTS is
     sort SplitEntry .       *** v -> C
     sort AnonDeposit .      *** <A,v>
     sort AnonContract .     *** <C,v>
+    subsort Qid < Name .    *** creates new names as qid (e.g. 'x 'y 'z 'x0 ...)
 
     ***
     *** Predicate
@@ -121,9 +123,7 @@ endv
 ***
 fmod BITML-SYNTAX is
     protecting BITML-SORTS .
-***    protecting LIST{Name} .
     protecting SET{Name} .
-***    protecting LIST{Secret} .
     protecting SET{Secret} .
     protecting LIST{SplitEntry} .
     protecting LIST{Configuration} .
@@ -133,8 +133,6 @@ fmod BITML-SYNTAX is
     protecting LIST{Value} .
 
     op v(_) : Nat -> Value [ctor format (d d b! o d)] .                                     *** v(0) v(1) ...
-    op x(_) : String -> Name [ctor format (d d g! o d)] .                                   *** x("dep1") x("dep2") ...
-    op s(_) : String -> Secret [ctor format (d d r! o d)] .                                 *** s("s1") c("s2") ...
     op _~>_ : Value Contract -> SplitEntry [ctor prec 5 frozen format (ni d ++ --)] .       *** v' -> C
     op <_,_> : Participant Value -> AnonDeposit [ctor prec 5 frozen format (d d d s d d)] . *** <A,v>
     op <_,_> : Contract Value -> AnonContract [ctor prec 5 frozen format (d d d s d d)] .   *** <C,v>
@@ -372,7 +370,7 @@ fmod BITML-UTILS is
              else $fresh(x^,(n + -1),(n' + 1),(y^, x))
              fi 
         fi 
-    if x := x("x_" + str(n')).    
+    if x := qid("x" + str(n')).
     
     ***
     *** convert natural to string (use CONVERSION module)
