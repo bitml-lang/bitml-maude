@@ -1,0 +1,157 @@
+***
+*** Calculus of communicating systems (CCS) (Robin Milner, 1980)
+***
+*** Source: Implementing CCS in Maude 2.
+***
+
+fmod ACTION is
+    protecting QID .
+    sorts Label Act .  subsorts Qid < Label < Act .
+    op tau : -> Act .
+    op ~_ : Label -> Label [prec 10] .
+    eq ~ ~ L:Label = L:Label .
+endfm
+
+fmod PROCESS is
+    protecting ACTION .
+    sorts ProcessId Process .  subsorts Qid < ProcessId < Process .
+    op 0 : -> Process .
+    op _._ : Act Process -> Process [prec 25] . 
+    op _+_ : Process Process -> Process [assoc comm prec 35] .
+    op _|_ : Process Process -> Process [assoc comm prec 30] .
+    op _`[_/_`] : Process Label Label -> Process [prec 20] .
+    op _\_ : Process Label -> Process [prec 20] . 
+endfm
+
+fmod CCS-CONTEXT is
+    inc PROCESS .
+    sorts Process? Context .  subsort Process < Process? .
+    op _=def_ : ProcessId Process -> Context [prec 40] .
+    op nil : -> Context .
+    op _&_ : Context Context -> Context [assoc comm id: nil prec 42] .
+    op _definedIn_ : ProcessId Context -> Bool .
+    op def : ProcessId Context -> Process? .
+    op not-defined : -> Process? .
+    op context : -> Context .
+
+    vars X X' : ProcessId .  var P : Process .  vars C C' : Context .
+
+    eq X definedIn nil = false .
+    eq X definedIn (X' =def P & C') = (X == X') or (X definedIn C') .
+    eq def(X, nil) = not-defined .
+    eq def(X, (X' =def P) & C') = if X == X' then P else def(X, C') fi .
+endfm
+
+mod CCS-SEMANTICS is
+    protecting CCS-CONTEXT .
+
+    sort ActProcess .  subsort Process < ActProcess .
+
+    op `{_`}_ : Act ActProcess -> ActProcess .
+       *** {A}P means that the process P has performed the action A
+
+    vars L M : Label .
+    vars A B : Act .
+    vars P P' Q Q' R : Process .
+    var X : ProcessId .
+    var AP : ActProcess .
+    var N : Nat .
+
+    *** Prefix
+    rl [prefix] : A . P => {A}P .
+
+    *** Summation
+    crl [sum] : P + Q => {A}P' if P => {A}P' .
+
+    *** Composition
+    crl [par1] : P | Q => {A}(P' | Q) if P => {A}P' .
+    crl [par2] : P | Q => {tau}(P' | Q') if P => {L}P' /\ Q => {~ L}Q' .
+
+    *** Restriction
+    crl [res] : P \ L => {A}(P' \ L) if P => {A}P'
+                             /\ A =/= L /\ A =/= ~ L .
+
+    *** Relabelling
+    crl [rel] : P[M / L] => {M}(P'[M / L]) if P =>{L}P' .
+    crl [rel] : P[M / L] => {~ M}(P'[M / L]) if P =>{~ L}P' .
+    crl [rel] : P[M / L] => {A}(P'[M / L]) if P =>{A}P'
+                                   /\ A =/= L /\ A =/= ~ L .
+
+    *** Definition
+    crl [def] : X => {A}P if (X definedIn context) /\ def(X,context) => {A}P .
+
+    *** reflexive, transitive closure
+
+    rl [zero] : P => P . 
+    crl [more] : P => {A}AP if P => {A}Q /\ Q => AP .
+
+    *** weak semantics
+
+    sorts Act*Process OActProcess .
+
+    op `{tau`}*_ : Process -> Act*Process .
+    op `{`{_`}`}_ : Act Process -> OActProcess .
+
+    subsorts Process < Act*Process OActProcess .
+
+    rl [tau0] : P => {tau}*  P .
+    crl [tau+] :  P => {tau}* R if P => { tau } Q /\  Q => {tau}* R .
+
+    crl [weak] : P => {{A}}P' if P  => {tau}* Q  /\
+                                 Q  => {A}Q'     /\ A =/= tau /\
+                                 Q' => {tau}* P' .
+
+endm
+
+mod EXAMPLE is
+    inc CCS-SEMANTICS .
+
+    eq context =  ('Proc   =def 'a . 'b . 'Proc) &
+                  ('Proc2  =def  'a . tau . 'Proc2 + tau . 'b . 'Proc2) & 
+                  ('Ven    =def  '2p . 'VenB  +  '1p . 'VenL)  & 
+                  ('VenB   =def  'big . 'collectB . 'Ven)    & 
+                  ('VenL   =def  'little . 'collectL . 'Ven)   & 
+                  ('Road   =def  'car . 'up . ~ 'ccross . ~ 'down . 'Road)  & 
+                  ('Rail   =def  'train . 'green . ~ 'tcross . ~ 'red . 'Rail) & 
+                  ('Signal =def  ~ 'green . 'red . 'Signal 
+                                 + ~ 'up . 'down . 'Signal)  & 
+                  ('Crossing =def (('Road | ('Rail | 'Signal)) 
+                                    \ 'green \ 'red \ 'up \ 'down ))  .
+
+endm
+
+smod CCS-STRAT is
+    pr EXAMPLE .
+
+    strat ccs : @ Process .
+    sd ccs := top(prefix) or-else
+              top(sum{ccs}) or-else
+              (top(par1{ccs}) |
+               top(par2{ccs, ccs})) or-else
+              top(res{ccs}) or-else
+              top(rel{ccs}) or-else
+              top(def{ccs}) .
+
+    strat trans : @ Process .
+    sd trans := top(zero) | top(more{ccs, trans}) .
+    strat trans2 : @ Process .
+    sd trans2 := top(more{ccs, trans2}) * .
+    strat trans3 : @ Process .
+    sd trans3 := idle | top(more{ccs, trans3}) .
+
+    strat tauS : @ Process .
+    sd tauS := tau0 | tau+{ccs, tauS} .
+
+    strat weakS : @ Process .
+    sd weakS := weak{tauS, ccs, tauS} .
+endsm
+
+eof
+
+srew [1] 'Crossing using ccs .
+
+srew [1] 'Ven using trans ; (match ({'2p}{'big}{'collectB}AP:ActProcess)) .
+
+srew [2] 'Ven using trans ; (match ({'1p}{'little}AP:ActProcess)) .
+
+continue 2 .

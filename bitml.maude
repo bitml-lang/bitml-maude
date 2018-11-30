@@ -678,18 +678,18 @@ mod BITML-SEM is
                     if  strategy([t | t^ | fv] < (A, A^) : D, v > y | S, A authorize D in y) /\
                         None := (searchAuth A ((A, A^) : D) y S) .  *** check that branch D is not already authorized by A
 
-    crl [C-Control] : [t | t^ | fv] < A^ : after t' : D + C, v > y | S => {l'} [t | t^ | fv'] S'
+    crl [C-Control1] : [t | t^ | fv] < A^ : after t' : D + C, v > y | S => {l'} [t | t^ | fv'] S'
                     if  t >= t' /\                                                      *** timelocks satisfied
                         Some (S'' S''') := (searchAuth A^ (A^ : after t' : D) y S) /\   *** S'' are authorizations, S''' ==  S \ S''
                         [t | t^ | fv] < D, v > y | S''' => {l'} [t | t^ | fv'] S' /\
                         Some y == cv(l') .                                              *** withdraw/split/put-reveal
 
-    crl [C-Control] : [t | t^ | fv] < after t' : D + C, v > y | S => {l'} [t | t^ | fv'] S'
+    crl [C-Control2] : [t | t^ | fv] < after t' : D + C, v > y | S => {l'} [t | t^ | fv'] S'
                     if  t >= t' /\                                                      *** timelocks satisfied
                         [t | t^ | fv] < D, v > y | S => {l'} [t | t^ | fv'] S' /\       *** D progresses
                         Some y == cv(l') .                                              *** withdraw/split/put-reveal
 
-    crl [C-Control] : [t | t^ | fv] < A^ : D + C, v > y | S => {l'} [t | t^ | fv'] S'
+    crl [C-Control3] : [t | t^ | fv] < A^ : D + C, v > y | S => {l'} [t | t^ | fv'] S'
                     if  Some (S'' S''') := (searchAuth A^ (A^ : D) y S) /\              *** S'' are authorizations, S''' == S \ S''
                         [t | t^ | fv] < D, v > y | S''' => {l'} [t | t^ | fv'] S' /\    *** D progresses
                         Some y == cv(l') .                                              *** withdraw/split/put-reveal
@@ -864,7 +864,6 @@ mod Example-LOTTERY is
 
     ops A B : -> Participant .
     op v : -> Value .
-    op x : -> Name .
     ops a b : -> Secret .
     ops t t' N M : -> Nat .
     op S : Contract -> SemConfiguration .
@@ -880,7 +879,7 @@ mod Example-LOTTERY is
 	        2 BTC ~> ( reveal b if const(0) <= | ref(b) | <= const(1) . withdraw B + after t : withdraw A )
 	        2 BTC ~> ( reveal a . withdraw A + after t : withdraw B )
 	        2 BTC ~> WIN:Contract
-            ), 6 BTC > x
+            ), 6 BTC > 'x
         | { A : a # N } 
         | { B : b # M } .
 
@@ -896,7 +895,31 @@ mod Example-LOTTERY is
     eq strategy(S:SemConfiguration, A reveal a) = true .
 endm
 
-mod Example-LOTTERY-CHECK is
-    protecting BITML-CHECK .
+
+***
+*** Strategies
+***
+smod BITML-STRAT is
     protecting Example-LOTTERY .
-endm
+    
+    strat all\delay @ SemConfiguration .
+    strat bitml @ SemConfiguration .
+    
+    sd all\delay := Rifl{all\delay} or-else ( 
+        Dep-AuthDestroy 
+      | Dep-Destroy 
+      | C-Split 
+      | C-PutReveal 
+      | C-AuthRev 
+      | C-Withdraw 
+      | C-AuthControl 
+      | C-Control1{all\delay} 
+      | C-Control2{all\delay} 
+      | C-Control3{all\delay} ) .
+
+    sd bitml := all\delay or-else Delay .
+
+endsm
+
+*** srew [1] in BITML-STRAT : S(WIN') using bitml ! .
+*** srew in BITML-STRAT :  toSemConf < after 10 : withdraw A, 10 BTC > 'x using bitml ! .

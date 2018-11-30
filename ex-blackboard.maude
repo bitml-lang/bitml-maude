@@ -40,8 +40,18 @@ smod BLACKBOARD-STRAT is
               B using play[M <- X , N <- Y] 
      ) ! .
 
-  sd maxmax := 
-     (matchrew B s.t. X := maximum(B) /\ Y := maximum(remove(X,B)) by
+  sd maxmax :=
+     (matchrew B s.t. X := minimum(B) /\ Y := minimum(remove(X,B)) by 
               B using play[M <- X , N <- Y] 
      ) ! .
+
+  *** test
+  strat minmin2 @ Blackboard .
+  sd minmin2 :=
+       matchrew B s.t. X := minimum(B) /\ Y := minimum(remove(X,B)) by
+              B using play[M <- X , N <- Y]  .
 endsm
+
+srew in BLACKBOARD-STRAT : 1 2 3 4 5 6 7 using minmin .
+srew in BLACKBOARD-STRAT : 1 2 3 4 5 6 7 using maxmax .
+srew in BLACKBOARD-STRAT : 1 2 3 4 5 6 7 using minmin2 .    *** minmin 1 step
