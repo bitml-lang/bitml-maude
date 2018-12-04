@@ -14,7 +14,7 @@ fmod BITML-SORTS is
     sort SplitEntry .       *** v -> C
     sort AnonDeposit .      *** <A,v>
     sort AnonContract .     *** <C,v>
-    subsort Qid < Name .    *** creates new names as qid (e.g. 'x 'y 'z 'x0 ...)
+    subsort Qid < Name .        *** creates new names as qid (e.g. 'x 'y 'z 'x0 ...)
 
     ***
     *** Predicate
@@ -132,6 +132,7 @@ fmod BITML-SYNTAX is
     protecting SORTABLE-LIST{Nat<} .
     protecting LIST{Value} .
 
+    op P(_) : Qid -> Participant [ctor prec 5] .
     op _BTC : Nat -> Value [ctor prec 5] .                                                  *** n BTC
     op _~>_ : Value Contract -> SplitEntry [ctor prec 5 frozen format (ni d ++ --)] .       *** v' -> C
     op <_,_> : Participant Value -> AnonDeposit [ctor prec 5 frozen format (d d d s d d)] . *** <A,v>
@@ -251,13 +252,11 @@ endfm
 fmod BITML-FREENAME is
 
     protecting BITML-STREQ .
-***    protecting LIST-AND-SET{Name} .
-    
     vars d d' : AnonDeposit .
     vars x y z : Name .
     vars A B : Participant .
     vars v v' : Value .
-    vars a a' : AuthAction .
+    vars auth : AuthAction .
     vars S S' P P' : Configuration .
     var s : Secret .
     var sL : Set{Secret} .
@@ -267,51 +266,44 @@ fmod BITML-FREENAME is
     var C C' : Contract .
     var sel : List{SplitEntry} .
     var D D' : GuardedContract .
-    var cp cp' : ContractPrecondition .
+    var cp : ContractPrecondition .
     var advC : AdvContract .
     var p : Predicate .
     var str : String .
     var tail : List{Configuration} .
 
     op names in _ : ContractPrecondition -> Set{Name} [memo] .
-    op names in _ : Contract -> Set{Name} [memo] .
+    op names in _ : Contract -> Set{Name} .
     op names in _ : Configuration -> Set{Name} [memo] .
     op names in _ : AuthAction -> Set{Name} [memo] .
+
+    eq names in C:Contract = empty [owise] .
+    eq names in C:ContractPrecondition = empty [owise] .
+    eq names in S:Configuration = empty [owise] .
+    eq names in A:AuthAction = empty [owise] .
 
     ***
     *** Contract 
     ***
-    eq names in (0).Contract = empty .                                              *** [contr.id]
-    eq names in (put dL reveal sL if p . C) = dL, (names in C) .                    *** [contr.put-reveal]
-    eq names in (withdraw A) = empty .                                              *** [contr.withdraw]
-    eq names in (A : D) = names in D .                                              *** [contr.authorization]
-    eq names in (after t : D) = names in D .                                        *** [contr.after]
-    eq names in (split( nil )) = empty .                                            *** [contr.split]
-    eq names in (split( (v ~> C) sel )) = (names in C), (names in (split(sel))) .   *** [contr.split]
-    ceq names in (C + C') = (names in C), (names in C') if C =/= 0 /\ C' =/= 0 .    *** [contr.sum]
-
+    eq names in (put dL reveal sL if p . C + C') = dL, (names in C), (names in C') .                    *** [contr.put-reveal]
+    eq names in (A : D + C') = names in D, (names in C') .                                              *** [contr.authorization]
+    eq names in (after t : D + C') = names in D, (names in C') .                                        *** [contr.after]
+    eq names in (split( nil ) + C') = (names in C') .                                                   *** [contr.split]
+    eq names in (split( (v ~> C) sel ) + C') = (names in C), (names in (split(sel))), (names in C') .   *** [contr.split]
 
     ***
     *** Contract Preconditions
     ***
-    eq names in (0).ContractPrecondition = empty .                                      *** [contr-pre.id]
-    eq names in (A ? v @ y) = y .                                                       *** [contr-pre.vol-deposit]
-    eq names in (A ! v @ y) = y .                                                       *** [contr-pre.perm-deposit]
-    eq names in (A secret s) = empty .                                                  *** [contr-pre.commit-secret]
-    ceq names in (cp | cp') = (names in cp), (names in cp') if cp =/= 0 /\ cp' =/= 0 .  *** [contr-pre.paral]
-
+    eq names in (A ? v @ y | cp) = y, (names in cp) .   *** [contr-pre.vol-deposit]
+    eq names in (A ! v @ y | cp) = y, (names in cp) .   *** [contr-pre.perm-deposit]
 
     ***
     *** Configurations
     ***
-    eq names in (0).Configuration = empty .                                         *** [conf.id]
-    eq names in ({cp}C) = (names in cp), (names in C) .                             *** [conf.contract-advertised]
-    eq names in (< C , v > y) = y, (names in C) .                                   *** [conf.active-contract]
-    eq names in (< A , v > y) = y .                                                 *** [conf.deposit]
-    eq names in (A[a]) = names in a .                                               *** [conf.authorization]
-    eq names in ({ A : s # n }) = empty .                                           *** [conf.committed-secret]
-    eq names in (A : s # n) = empty .                                               *** [conf.revealed-secret]
-    ceq names in (S | S') = (names in S), (names in S') if S =/= 0 /\ S' =/= 0 .    *** [conf.parallel]
+    eq names in ({cp}C | S) = (names in cp), (names in C), (names in S) .                             *** [conf.contract-advertised]
+    eq names in (< C , v > y | S) = y, (names in C), (names in S) .                                   *** [conf.active-contract]
+    eq names in (< A , v > y | S) = y, (names in S) .                                                 *** [conf.deposit]
+    eq names in (A[auth] | S) = names in auth, (names in S) .                                               *** [conf.authorization]
 
     ***
     *** Authorization
