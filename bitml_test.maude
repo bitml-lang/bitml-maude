@@ -59,12 +59,12 @@ load mUnit.maude
     assertEqual(fresh(empty,3), 'x0, 'x1, 'x2)
     assertEqual(fresh(('x1, 'x2),3), 'x0, 'x3, 'x4)
 
-    assertEqual(tau . 0, put empty reveal empty if true . 0)
-    assertEqual(put x . 0, put x reveal empty if true . 0)
+    assertEqual(tau . 0, put empty reveal empty if True . 0)
+    assertEqual(put x . 0, put x reveal empty if True . 0)
     assertEqual(put x if p . 0, put x reveal empty if p . 0)
-    assertEqual(reveal a . 0, put empty reveal a if true . 0)
+    assertEqual(reveal a . 0, put empty reveal a if True . 0)
     assertEqual(reveal a if p . 0, put empty reveal a if p . 0)
-    assertEqual(put x reveal a . 0, put x reveal a if true . 0)
+    assertEqual(put x reveal a . 0, put x reveal a if True . 0)
 
     *** $eval e [S]
     assertEqual($eval const(42) [S:Configuration], Success(42))
@@ -90,7 +90,7 @@ load mUnit.maude
     assertReachableBnd((toSemConf < A, v > x), ({A authorize-destroy-of x} (ctx:Context < A, v > x | A[ x |># ])), 1)
 
     *** destroy
-    assertReachableBnd( (toSemConf < A, v > x), ({destroy x} ctx:Context 0), 2)
+    assertReachableBnd( (toSemConf < A, v > x), ({destroy x} ctx:Context 0), 3)
 
     *** split
     assertReachableBnd(

@@ -146,7 +146,7 @@ smod CCS-STRAT is
     sd weakS := weak{tauS, ccs, tauS} .
 endsm
 
-eof
+***eof
 
 srew [1] 'Crossing using ccs .
 

@@ -141,8 +141,8 @@ fmod BITML-SYNTAX is
     ***
     *** Predicates/Expressions
     ***
-    op true : -> True [ctor] .
-    op false : -> False [ctor] .
+    op True : -> True [ctor] .
+    op False : -> False [ctor] .
     op _||_ : Predicate Predicate -> Or [ctor prec 25 frozen comm] .
     op _&&_ : Predicate Predicate -> And [ctor prec 24 frozen comm] .
     op !_ : Predicate -> Not [ctor prec 23 frozen] .
@@ -228,12 +228,12 @@ fmod BITML-STREQ is
     op reveal_if_._ : Set{Secret} Predicate Contract -> PutReveal [prec 25 frozen] .
     op put_reveal_._ : Set{Name} Set{Secret} Contract -> PutReveal [prec 25 frozen] .
 
-    eq tau . C = put empty reveal empty if true . C .
-    eq put x^ . C = put x^ reveal empty if true . C .
+    eq tau . C = put empty reveal empty if True . C .
+    eq put x^ . C = put x^ reveal empty if True . C .
     eq put x^ if p . C = put x^ reveal empty if p . C .
-    eq reveal a^ . C = put empty reveal a^ if true . C .
+    eq reveal a^ . C = put empty reveal a^ if True . C .
     eq reveal a^ if p . C = put empty reveal a^ if p . C .
-    eq put x^ reveal a^ . C = put x^ reveal a^ if true . C .
+    eq put x^ reveal a^ . C = put x^ reveal a^ if True . C .
     
     eq empty : D = D .
     eq A : A^ : D = (A, A^) : D .
@@ -506,14 +506,18 @@ fmod BITML-PREDICATE-SAT is
     var P P' : Predicate .
     var S S' : Configuration .
     var a : Secret .
-    var n m : Int .
+    var n m : Nat .
     var N : Nat .
     var A : Participant .
     vars E E' E'' : Expression .
 
-    eq S |= predicate P = $eval P [ S ] == Success((true).True) .
+    eq S |= predicate P = $eval P [ S ] == Success(true) .
     ceq S | S' |= predicate P = S |= predicate P or-else S' |= predicate P if S =/= 0 /\ S' =/= 0 .
     eq S |= predicate P = false [owise] .
+
+    op toExp_ : Bool -> Predicate [prec 65] .
+    eq toExp true = True .
+    eq toExp false = False .
 
     op $eval_[_] : Predicate Configuration -> Try .
     ceq $eval P && P' [ S ] = Success(b and b') if Success(b) := $eval P [ S ] /\ Success(b') := $eval P' [ S ] .
@@ -525,8 +529,8 @@ fmod BITML-PREDICATE-SAT is
     ceq $eval E <= E' [ S ] = Success(n <= m) if Success(n) := $eval E [ S ] /\ Success(m) := $eval E' [ S ] .
     ceq $eval E > E' [ S ] = Success(n > m) if Success(n) := $eval E [ S ] /\ Success(m) := $eval E' [ S ] .
     ceq $eval E >= E' [ S ] = Success(n >= m) if Success(n) := $eval E [ S ] /\ Success(m) := $eval E' [ S ] .
-    eq $eval true [ S ] = Success((true).True) .
-    eq $eval false [ S ] = Success((false).False) .
+    eq $eval True [ S ] = Success(true) .
+    eq $eval False [ S ] = Success(false) .
     
     op $eval_[_] : Expression Configuration -> Try .
     eq $eval const(n) [ S ] = Success(n) .
@@ -535,25 +539,26 @@ fmod BITML-PREDICATE-SAT is
     ceq $eval E + E' [ S ] = Success(n + m) if Success(n) := $eval E [ S ] /\ Success(m) := $eval E' [ S ] .
     ceq $eval E - E' [ S ] = Success(n + - m) if Success(n) := $eval E [ S ] /\ Success(m) := $eval E' [ S ] .
 
+    eq $eval P [ S ] = Failure("Unable to evaluate the predicate") [owise] .
     eq $eval E [ S ] = Failure("Unable to evaluate the expression") [owise] .
 
     ***
     *** Simplifications
     ***
-    eq ! (true).True = (false).False .
-    eq ! (false).False = (true).True .
-    eq (true).True || P = (true).True .
-    eq (false).False && P = (false).False .
-    eq (false).False || P = P .
-    eq (true).True && P = P .
+    eq ! True = False .
+    eq ! False = True .
+    eq True || P = True .
+    eq False && P = False .
+    eq False || P = P .
+    eq True && P = P .
     eq const(n) + const(m) = const(n + m) .
     eq const(n) - const(m) = const(n + (- m)) .
-    eq const(n) < const(m) = if n < m then (true).True else (false).False fi .
-    eq const(n) <= const(m) = if n <= m then (true).True else (false).False fi .
-    eq const(n) > const(m) = if n > m then (true).True else (false).False fi .
-    eq const(n) >= const(m) = if n >= m then (true).True else (false).False fi .
-    eq const(n) == const(m) = if n == m then (true).True else (false).False fi .
-    eq const(n) != const(m) = if n =/= m then (true).True else (false).False fi .
+    eq const(n) < const(m) = toExp  n < m .
+    eq const(n) <= const(m) = toExp n <= m .
+    eq const(n) > const(m) = toExp n > m .
+    eq const(n) >= const(m) = toExp n >= m .
+    eq const(n) == const(m) = toExp n == m .
+    eq const(n) != const(m) = toExp n =/= m .
     eq | const(n) | = const( rat( ceiling( (log(float(n))) / (log(float(2))) / 7.0 ) ) ) .
 
     ***
@@ -639,8 +644,10 @@ mod BITML-SEM is
     eq strategy(S:SemConfiguration, l) = true [owise] .         *** default: all moves are enabled
 
     *** Allow progression of labelled configuration (timed)
-    crl [Rifl] : {l} [t | t^ | fv] S => {l'} [t' | t'^ | fv'] S' 
-        if  [t | t^ | fv] S => {l'} [t' | t'^ | fv'] S' .
+    
+    rl [Rifl] : {l} [t | t^ | fv] S => [t | t^ | fv] S .
+***    rl [Rifl] : {l} [t | t^ | fv] S => [t' | t'^ | fv'] S' 
+***        if  [t | t^ | fv] S => {l'} [t' | t'^ | fv'] S' .
 
     ***
     *** [t | t^ | fv] S => {l} [t' | t'^ | fv'] S'    
@@ -718,7 +725,7 @@ mod BITML is
 endm
 
 
-mod BITML-TEST is 
+mod BITML-TEST is  
     protecting BITML .
     ops A B A' B' : -> Participant .
     ops x x' x'' : -> Name .
@@ -863,6 +870,8 @@ mod Example-LOTTERY is
 
     eq t = 10 .
     eq t' = 15 .
+    eq N = 1 .
+    eq M = 1 .
 
     *** lottery
     eq S(WIN:Contract) = 
@@ -883,10 +892,12 @@ mod Example-LOTTERY is
             + (after t' : reveal b . withdraw B) .
 
     *** strategy
-    eq strategy(S:SemConfiguration, l:Label) = false [owise] .
-    eq strategy(S:SemConfiguration, A reveal a) = true .
+    eq strategy(S:SemConfiguration, A:Participant authorize-destroy-of x:Name) = false .
+    eq strategy(S:SemConfiguration, A reveal a:Secret) = true .
+    eq strategy(S:SemConfiguration, A:Participant reveal a:Secret) = false .
 endm
 
+***eof
 
 ***
 *** Strategies
@@ -897,7 +908,7 @@ smod BITML-STRAT is
     strat all\delay @ SemConfiguration .
     strat bitml @ SemConfiguration .
     
-    sd all\delay := Rifl{all\delay} or-else ( 
+    sd all\delay := Rifl or-else ( 
         Dep-AuthDestroy 
       | Dep-Destroy 
       | C-Split 
@@ -911,7 +922,7 @@ smod BITML-STRAT is
 
     sd bitml := all\delay or-else Delay .
 
+	*** srew [1] in BITML-STRAT : S(WIN') using bitml ! .
+	*** srew in BITML-STRAT :  toSemConf < after 10 : withdraw A, 10 BTC > 'x using bitml ! .
 endsm
 
-*** srew [1] in BITML-STRAT : S(WIN') using bitml ! .
-*** srew in BITML-STRAT :  toSemConf < after 10 : withdraw A, 10 BTC > 'x using bitml ! .
