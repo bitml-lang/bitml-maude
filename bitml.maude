@@ -891,10 +891,16 @@ mod Example-LOTTERY is
             + (after t' : reveal a . withdraw A)
             + (after t' : reveal b . withdraw B) .
 
-    *** strategy
-    eq strategy(S:SemConfiguration, A:Participant authorize-destroy-of x:Name) = false .
-    eq strategy(S:SemConfiguration, A reveal a:Secret) = true .
-    eq strategy(S:SemConfiguration, A:Participant reveal a:Secret) = false .
+    *** strategies
+
+    *** No one destroy a deposit
+    ***eq strategy(S:SemConfiguration, A:Participant authorize-destroy-of x:Name) = false .
+
+    *** Participant A reveals any secret
+    ***eq strategy(S:SemConfiguration, A reveal a:Secret) = true .
+
+    *** No one reveal a secret
+    ***eq strategy(S:SemConfiguration, A:Participant reveal a:Secret) = false .
 endm
 
 ***eof
@@ -922,6 +928,7 @@ smod BITML-STRAT is
 
     sd bitml := all\delay or-else Delay .
 
+    *** Examples
 	*** srew [1] in BITML-STRAT : S(WIN') using bitml ! .
 	*** srew in BITML-STRAT :  toSemConf < after 10 : withdraw A, 10 BTC > 'x using bitml ! .
 endsm
