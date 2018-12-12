@@ -645,9 +645,8 @@ mod BITML-SEM is
 
     *** Allow progression of labelled configuration (timed)
     
-    rl [Rifl] : {l} [t | t^ | fv] S => [t | t^ | fv] S .
-***    rl [Rifl] : {l} [t | t^ | fv] S => [t' | t'^ | fv'] S' 
-***        if  [t | t^ | fv] S => {l'} [t' | t'^ | fv'] S' .
+    crl [Rifl] : {l} [t | t^ | fv] S => [t' | t'^ | fv'] S' 
+        if  [t | t^ | fv] S => {l'} [t' | t'^ | fv'] S' .
 
     ***
     *** [t | t^ | fv] S => {l} [t' | t'^ | fv'] S'    
@@ -698,14 +697,54 @@ mod BITML-SEM is
 
 endm
 
-mod BITML-CHECK is
-    protecting BITML-SEM .    
+mod BITML is
+    protecting BITML-SEM .
+endm
+
+***
+*** Strategies
+***
+smod BITML-STRAT is
+    protecting BITML .
+    
+    strat default @ SemConfiguration .
+    strat all\delay @ SemConfiguration .
+    strat bitml-1step @ SemConfiguration .
+    strat bitml @ SemConfiguration .
+    
+    *** default Maude strategy
+    sd default := all ! .
+    sd all\delay := Rifl{all\delay} or-else ( 
+        Dep-AuthDestroy 
+      | Dep-Destroy 
+      | C-Split 
+      | C-PutReveal 
+      | C-AuthRev 
+      | C-Withdraw 
+      | C-AuthControl 
+      | C-Control1{all\delay} 
+      | C-Control2{all\delay} 
+      | C-Control3{all\delay} ) .
+
+    sd bitml-1step := all\delay or-else Delay .
+    sd bitml := bitml-1step ! ; idle .
+
+    *** Examples
+    *** srew [1] in BITML-STRAT : S(WIN') using bitml ! .
+    *** srew in BITML-STRAT :  toSemConf < after 10 : withdraw A, 10 BTC > 'x using bitml ! .
+endsm
+
+***
+*** Model checking
+***
+
+mod BITML-PREDS is
+    protecting BITML .    
     protecting SATISFACTION .
-    including MODEL-CHECKER .
     including LTL-SIMPLIFIER .
 
-    subsort SemConfiguration < State .
-    op frozen : -> Prop .
+    subsort LSemConfiguration < State .
+    op contract-free : -> Prop .
 
     var C : Contract .
     var v : Value .
@@ -714,39 +753,36 @@ mod BITML-CHECK is
     var t : Nat .
     var t^ : List{Nat<} .
     var fv : Set{Name} .
+    var l : Label .
 
-    eq < C, v > x | S |= frozen = C == 0 .
-    eq [t | t^ | fv ] S |= frozen = S |= frozen .
-    eq S:SemConfiguration |= frozen = false [owise] .
+    eq < C, v > x | S |= contract-free = false .
+    eq [t | t^ | fv ] S |= contract-free = S |= contract-free .
+    eq {l} [t | t^ | fv ] S |= contract-free = S |= contract-free .
+    eq S:Configuration |= contract-free = true [owise] .
+    eq S:SemConfiguration |= contract-free = true [owise] .
+    eq S:LSemConfiguration |= contract-free = true [owise] .
 endm
 
-mod BITML is
-    protecting BITML-SEM .
-endm
+smod BITML-CHECK is
+    protecting BITML-STRAT .
+    protecting BITML-PREDS .
+    *** Model checking w/o strategies
+    ***including MODEL-CHECKER .
+    *** Model checking w strategies
+    including STRATEGY-MODEL-CHECKER .
+endsm
+
+
+*** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+*** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+*** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+*** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+*** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+*** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***
 
 
 mod BITML-TEST is  
     protecting BITML .
-    ops A B A' B' : -> Participant .
-    ops x x' x'' : -> Name .
-    ops y y' y'' : -> Name .
-    ops z z' z'' : -> Name .
-    ops v v' v'' : -> Value .
-    ops a a' a'' : -> Secret .
-    ops b b' b'' : -> Secret .
-    ops x^ y^ z^ : -> Set{Name} . 
-    ops v^ : -> List{Value} . 
-    ops a^ b^ : -> Set{Secret} . 
-    ops t t' : -> Nat .
-    ops n n' N N' : -> Nat .
-    ops p p' p'' : -> Predicate .
-    ops C C' C'' : -> Contract .
-    ops D D' D'' : -> GuardedContract .
-    ops l l' l'' : -> Label .
-endm
-
-mod BITML-CHECK-TEST is 
-    protecting BITML-CHECK .
     ops A B A' B' : -> Participant .
     ops x x' x'' : -> Name .
     ops y y' y'' : -> Name .
@@ -764,8 +800,6 @@ mod BITML-CHECK-TEST is
     ops l l' l'' : -> Label .
     ops S S' : -> Configuration .
 endm
-
-
 
 ***
 *** Example 1.0
@@ -865,6 +899,8 @@ mod Example-LOTTERY is
     op v : -> Value .
     ops a b : -> Secret .
     ops t t' N M : -> Nat .
+    op LOTTERY : -> SemConfiguration .
+    op LIQUID-LOTTERY : -> SemConfiguration .
     op S : Contract -> SemConfiguration .
     ops WIN WIN' : -> Contract .
 
@@ -874,6 +910,10 @@ mod Example-LOTTERY is
     eq M = 1 .
 
     *** lottery
+    
+    eq LOTTERY = S(WIN) .
+    eq LIQUID-LOTTERY = S(WIN') .
+    
     eq S(WIN:Contract) = 
         toSemConf
 	    < split(
@@ -894,42 +934,28 @@ mod Example-LOTTERY is
     *** strategies
 
     *** No one destroy a deposit
-    ***eq strategy(S:SemConfiguration, A:Participant authorize-destroy-of x:Name) = false .
+    eq strategy(S:SemConfiguration, A:Participant authorize-destroy-of x:Name) = false .
 
-    *** Participant A reveals any secret
+    *** A reveals any secret (default any participant reveals any secret)
     ***eq strategy(S:SemConfiguration, A reveal a:Secret) = true .
+
+    *** B does not reveal any secret
+    eq strategy(S:SemConfiguration, A reveal a:Secret) = false .
 
     *** No one reveal a secret
     ***eq strategy(S:SemConfiguration, A:Participant reveal a:Secret) = false .
+
+    *** B authorizes any contract
+    ***eq strategy(S:SemConfiguration, B authorize D:GuardedContract in y:Name) = true .
+
+    *** No one authorize any contract
+    ***eq strategy(S:SemConfiguration, A:Participant authorize D:Contract in y:Name) = false .
 endm
 
-***eof
-
-***
-*** Strategies
-***
-smod BITML-STRAT is
-    protecting Example-LOTTERY .
-    
-    strat all\delay @ SemConfiguration .
-    strat bitml @ SemConfiguration .
-    
-    sd all\delay := Rifl or-else ( 
-        Dep-AuthDestroy 
-      | Dep-Destroy 
-      | C-Split 
-      | C-PutReveal 
-      | C-AuthRev 
-      | C-Withdraw 
-      | C-AuthControl 
-      | C-Control1{all\delay} 
-      | C-Control2{all\delay} 
-      | C-Control3{all\delay} ) .
-
-    sd bitml := all\delay or-else Delay .
-
-    *** Examples
-	*** srew [1] in BITML-STRAT : S(WIN') using bitml ! .
-	*** srew in BITML-STRAT :  toSemConf < after 10 : withdraw A, 10 BTC > 'x using bitml ! .
+smod LOTTERY-CHECK is 
+    protecting BITML-CHECK .
+    including Example-LOTTERY .
 endsm
 
+*** red in LOTTERY-CHECK : modelCheck(LOTTERY, <> contract-free, 'bitml) .
+*** red in LOTTERY-CHECK : modelCheck(LIQUID-LOTTERY, <> contract-free, 'bitml) .

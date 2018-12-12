@@ -1,0 +1,90 @@
+***
+*** River crossing example (with model checking)
+***
+
+load model-checker
+
+mod RIVER-CROSSING is
+    sort Side Group .
+
+    ops left right : -> Side .
+    op change : Side -> Side .
+    ops s w g c : Side -> Group .
+    op __ : Group Group -> Group [assoc comm] .
+    op init : -> Group .
+
+    vars S S' : Side .
+
+    eq change(left) = right .
+    eq change(right) = left .
+
+    eq init = s(left) w(left) g(left) c(left) .
+
+    crl [wolf-eats] : w(S) g(S) s(S') => w(S) s(S') if S =/= S' .
+    crl [goat-eats] : c(S) g(S) s(S') => g(S) s(S') if S =/= S' .
+
+    rl [shepherd-alone] : s(S) => s(change(S)) .
+    rl [wolf] : s(S) w(S) => s(change(S)) w(change(S)) .
+    rl [goat] : s(S) g(S) => s(change(S)) g(change(S)) .
+    rl [cabbage] : s(S) c(S) => s(change(S)) c(change(S)) .
+endm
+
+smod RIVER-CROSSING-STRAT is
+    pr RIVER-CROSSING .
+
+    strats eating oneCrossing crossAndEat @ Group .
+    sd eating := (wolf-eats | goat-eats) ! .
+    sd oneCrossing := shepherd-alone | wolf | goat | cabbage .
+    sd crossAndEat := oneCrossing ; eating .
+
+    strat allCE @ Group .
+    sd allCE := crossAndEat ; allCE .
+endsm
+
+smod RIVER-CROSSING-STRAT2 is
+    pr RIVER-CROSSING .
+
+    strat good @ Group .
+    sd good := goat ; shepherd-alone ; cabbage ; goat ; wolf ; shepherd-alone ; goat .
+endsm
+
+mod RIVER-CROSSING-PREDS is
+    pr RIVER-CROSSING .
+    inc SATISFACTION .
+
+    subsort Group < State .
+
+    op death : -> Prop .
+    op goal : -> Prop .
+    op bad : -> Prop .
+
+    var X Y Z T : Side .
+    var G : Group .
+
+    *** The two following properties assume the initial state contains
+    *** all the characters and wolf-eats and goat-eats rules are excluded
+    eq s(X) w(Y) g(Z) c(T) |= death = (Y == Z and Y =/= X) or (Z == T and Z =/= X) .
+    eq G:Group |= death = false [owise] .
+
+    eq s(right) w(right) g(right) c(right) |= goal = true .
+    eq G:Group |= goal = false [owise] .
+
+    *** The following property has sense when *-eats are taken into account
+    ceq s(X) w(Y) g(Y) G |= bad = true if X =/= Y .
+    ceq s(X) g(Y) c(Y) G |= bad = true if X =/= Y .
+    eq G |= bad = false [owise] .
+endm
+
+smod MC is
+    pr RIVER-CROSSING-STRAT .
+    pr RIVER-CROSSING-STRAT2 .
+    pr RIVER-CROSSING-PREDS .
+    inc STRATEGY-MODEL-CHECKER .
+endsm
+
+***eof
+
+red modelCheck(init, [] ~ death, 'good) .
+red modelCheck(init, [] ~ death /\ <> goal, 'good) .
+red modelCheck(init, [] ~ bad, 'allCE) .
+red modelCheck(init, [] ~ bad, 'allCE, 'crossAndEat) .

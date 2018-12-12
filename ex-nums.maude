@@ -1,0 +1,44 @@
+
+mod NUMBERS is
+    inc NAT .
+    sort Test .
+    
+    protecting SATISFACTION .
+    subsort Test < State .
+
+    vars a b c : Nat .
+
+    op Test : Nat Nat Nat -> Test .
+
+    crl [increment-a] : Test(a, b, c) => Test(a + 1, b, c) if a + 1 <= 10 .
+    crl [increment-b] : Test(a, b, c) => Test(a, b + 1, c) if b + 1 <= 10 .
+    crl [increment-c] : Test(a, b, c) => Test(a, b, c + 1) if c + 1 <= 10 .
+    rl [final] : Test(10, 10, 10) => Test(11, 11, 11) .
+endm
+
+smod NUMBERS-STRAT is
+  protecting NUMBERS .
+
+  strat leftToRight @ Test .
+  strat leftToRight2 @ Test .
+  strat leftToRightAndFinal @ Test .
+
+  sd leftToRight := (increment-a !); (increment-b !); (increment-c !) .
+  sd leftToRightAndFinal := (increment-a !); (increment-b !); (increment-c !); final .
+  sd leftToRight2 := leftToRight ; idle .
+endsm
+
+smod NUMBERS-CHECK is
+    protecting NUMBERS-STRAT .
+    *** Model checking w/o strategies
+    ***including MODEL-CHECKER .
+    *** Model checking w strategies
+    including STRATEGY-MODEL-CHECKER .
+endsm
+
+red modelCheck( Test(1,1,1), True, 'leftToRight ) .          *** true (ok)
+red modelCheck( Test(1,1,1), False, 'leftToRight ) .         *** true (wrong)
+red modelCheck( Test(1,1,1), True, 'leftToRightAndFinal ) .  *** true (ok)
+red modelCheck( Test(1,1,1), False, 'leftToRightAndFinal ) . *** false (ok) 
+red modelCheck( Test(1,1,1), True, 'leftToRight2 ) .          *** true (ok)
+red modelCheck( Test(1,1,1), False, 'leftToRight2 ) .         *** true (wrong)
