@@ -247,7 +247,7 @@ fmod BITML-STREQ is
 endfm
 
 ***
-*** Unused
+*** Get names in a Configuration
 ***
 fmod BITML-FREENAME is
 
@@ -273,7 +273,7 @@ fmod BITML-FREENAME is
     var tail : List{Configuration} .
 
     op names in _ : ContractPrecondition -> Set{Name} [memo] .
-    op names in _ : Contract -> Set{Name} .
+    op names in _ : Contract -> Set{Name} [memo] .
     op names in _ : Configuration -> Set{Name} [memo] .
     op names in _ : AuthAction -> Set{Name} [memo] .
 
@@ -303,7 +303,7 @@ fmod BITML-FREENAME is
     eq names in ({cp}C | S) = (names in cp), (names in C), (names in S) .                             *** [conf.contract-advertised]
     eq names in (< C , v > y | S) = y, (names in C), (names in S) .                                   *** [conf.active-contract]
     eq names in (< A , v > y | S) = y, (names in S) .                                                 *** [conf.deposit]
-    eq names in (A[auth] | S) = names in auth, (names in S) .                                               *** [conf.authorization]
+    eq names in (A[auth] | S) = names in auth, (names in S) .                                         *** [conf.authorization]
 
     ***
     *** Authorization
@@ -317,10 +317,85 @@ fmod BITML-FREENAME is
     eq names in (x |>#) = x .                       *** [auth.destroy]
 endfm
 
+***
+*** Get participants in a Configuration
+***
+fmod BITML-PARTICIPANTS is
+
+    protecting BITML-STREQ .
+    vars d d' : AnonDeposit .
+    vars x y z : Name .
+    vars A B : Participant .
+    vars v v' : Value .
+    vars auth : AuthAction .
+    vars S S' P P' : Configuration .
+    var s : Secret .
+    var sL : Set{Secret} .
+    var n n' t N : Nat .
+    var dL : Set{Name} .
+    var acc : Set{Name} .
+    var C C' : Contract .
+    var sel : List{SplitEntry} .
+    var D D' : GuardedContract .
+    var cp : ContractPrecondition .
+    var advC : AdvContract .
+    var p : Predicate .
+    var str : String .
+    var tail : List{Configuration} .
+    var a : Secret .
+
+    op participants in _ : ContractPrecondition -> Set{Participant} [memo] .
+    op participants in _ : Contract -> Set{Participant} [memo] .
+    op participants in _ : Configuration -> Set{Participant} [memo] .
+    op participants in _ : AuthAction -> Set{Participant} [memo] .
+
+    eq participants in C:Contract = empty [owise] .
+    eq participants in C:ContractPrecondition = empty [owise] .
+    eq participants in S:Configuration = empty [owise] .
+    eq participants in A:AuthAction = empty [owise] .
+
+    ***
+    *** Contract 
+    ***
+    eq participants in (put dL reveal sL if p . C + C') = (participants in C), (participants in C') .                               *** [contr.put-reveal]    
+    eq participants in (withdraw A + C) = A, (participants in C) .                                                                  *** [contr.withdraw]
+    eq participants in (A : D + C') = A, participants in D, (participants in C') .                                                  *** [contr.authorization]
+    eq participants in (after t : D + C') = participants in D, (participants in C') .                                               *** [contr.after]
+    eq participants in (split( nil ) + C') = (participants in C') .                                                                 *** [contr.split]
+    eq participants in (split( (v ~> C) sel ) + C') = (participants in C), (participants in (split(sel))), (participants in C') .   *** [contr.split]
+
+    ***
+    *** Contract Preconditions
+    ***
+    eq participants in (A ? v @ y | cp) = A, (participants in cp) .   *** [contr-pre.vol-deposit]
+    eq participants in (A ! v @ y | cp) = A, (participants in cp) .   *** [contr-pre.perm-deposit]
+    eq participants in (A secret a | cp) = A, (participants in cp) .  *** [contr-pre.commit-secret]
+
+    ***
+    *** Configurations
+    ***
+    eq participants in ({cp}C | S) = (participants in cp), (participants in C), (participants in S) .   *** [conf.contract-advertised]
+    eq participants in (< C , v > y | S) = (participants in C), (participants in S) .                   *** [conf.active-contract]
+    eq participants in (< A , v > y | S) = A, (participants in S) .                                     *** [conf.deposit]
+    eq participants in (A[auth] | S) = A, participants in auth, (participants in S) .                   *** [conf.authorization]
+    eq participants in ({ A : a # N } | S) = A, (participants in S) .                                   *** [conf.committed-secret]
+    eq participants in ( A : a # N | S) = A, (participants in S) .                                      *** [conf.revealed-secret]
+
+    ***
+    *** Authorization
+    ***
+    eq participants in (#|> advC) = (participants in advC) .    *** [auth.commit-secret]
+    eq participants in (y |> advC) = (participants in advC) .   *** [auth.spend-deposit]
+    eq participants in (y |> D) = (participants in D) .         *** [auth.take-branch]
+    eq participants in (y |> B) = B .                           *** [auth.donate]
+endfm
+
+
 fmod BITML-UTILS is
 
     protecting BITML-STREQ .
     protecting BITML-FREENAME .
+    protecting BITML-PARTICIPANTS .
     protecting SORTABLE-LIST-AND-SET{Nat<} .
 
     var v : Value .
@@ -585,6 +660,7 @@ mod BITML-SEM is
     protecting BITML-PREDICATE-SAT .
     
     var A B A' B' A'' B'' : Participant .
+    var Part : Set{Participant} .
     var C C' : Contract .
     var D D' : GuardedContract .
     vars v v' v'' v''' : Value .
@@ -612,14 +688,15 @@ mod BITML-SEM is
 
     sort Context .
     
-    op [_|_|_] : Nat List{Nat<} Set{Name} -> Context [ctor frozen] .
+    op [_|_|_|_] : Nat List{Nat<} Set{Name} Set{Participant} -> Context [ctor frozen] .
+    op Adv : -> Participant .
     
     op __ : Context Configuration -> SemConfiguration [ctor frozen] .
 
     op {_}_ : Label SemConfiguration -> LSemConfiguration [ctor frozen] .
     
     op toSemConf_ : Configuration -> SemConfiguration [prec 50] .
-    eq toSemConf S = [ 0 | ticks(S) | (names in S) ] S .
+    eq toSemConf S = [ 0 | ticks(S) | (names in S) | (participants in S) ] S .
 
     *** Labels
     sort Label .
@@ -645,54 +722,54 @@ mod BITML-SEM is
 
     *** Allow progression of labelled configuration (timed)
     
-    crl [Rifl] : {l} [t | t^ | fv] S => [t' | t'^ | fv'] S' 
-        if  [t | t^ | fv] S => {l'} [t' | t'^ | fv'] S' .
+    crl [Rifl] : {l} [t | t^ | fv | Part] S => [t' | t'^ | fv' | Part] S' 
+        if  [t | t^ | fv | Part] S => {l'} [t' | t'^ | fv' | Part] S' .
 
     ***
     *** [t | t^ | fv] S => {l} [t' | t'^ | fv'] S'    
     ***
-    crl [Dep-AuthDestroy] : [t | t^ | fv] < A , v > x | S => { A authorize-destroy-of x } [t | t^ | fv] < A , v > x | A [ x |># ] | S
-                    if  strategy([t | t^ | fv] < A , v > x | S, A authorize-destroy-of x) /\
+    crl [Dep-AuthDestroy] : [t | t^ | fv | Part] < A , v > x | S => { A authorize-destroy-of x } [t | t^ | fv | Part] < A , v > x | A [ x |># ] | S
+                    if  strategy([t | t^ | fv | Part] < A , v > x | S, A authorize-destroy-of x) /\
                         None := (searchAuthDestroy A x S) .  *** check that A has not already authorized to destroy x
 
-    rl [Dep-Destroy] : [t | t^ | fv] < A , v > x | A [ x |># ] | S => { destroy x } [t | t^ | fv] S .
+    rl [Dep-Destroy] : [t | t^ | fv | Part] < A , v > x | A [ x |># ] | S => { destroy x } [t | t^ | fv | Part] S .
 
-    crl [C-Split] : [t | t^ | fv] < (split (splitEntries) ) + C, v > y | S => { split(y) } [t | t^ | fv, fv'] ((|| splitEntries fv') | S )
+    crl [C-Split] : [t | t^ | fv | Part] < (split (splitEntries) ) + C, v > y | S => { split(y) } [t | t^ | fv, fv' | Part] ((|| splitEntries fv') | S )
                     if fv' := fresh(fv,size(splitEntries)) .
 
-    crl [C-PutReveal] : [t | t^ | fv] (< (put x^ reveal a^ if p . C) + C', v > y | S) => { put(x^,a^,y) } [t | t^ | fv, z] ( < C, v > z | S'')
+    crl [C-PutReveal] : [t | t^ | fv | Part] (< (put x^ reveal a^ if p . C) + C', v > y | S) => { put(x^,a^,y) } [t | t^ | fv, z | Part] ( < C, v > z | S'')
                     if  z := fresh(fv) /\ 
                         Some (S' S'') := (deposits x^ S) /\ *** fetch all deposits x^ in S (S' are deposits in S, S'' == S \ S')
                         Some S''' := (secrets a^ S'') /\    *** fetch all secrets a^ in S
                         S''' |= predicate p .
 
-    crl [C-AuthRev] : [t | t^ | fv] {A : a # N} | S => { A reveal a } [t | t^ | fv] (A : a # N | S) 
-                    if  strategy([t | t^ | fv] {A : a # N} | S, A reveal a) .
+    crl [C-AuthRev] : [t | t^ | fv | Part] {A : a # N} | S => { A reveal a } [t | t^ | fv | Part] (A : a # N | S) 
+                    if  strategy([t | t^ | fv | Part] {A : a # N} | S, A reveal a) .
 
-    crl [C-Withdraw] : [t | t^ | fv] < withdraw A + C, v > y | S => { A withdraw v from y } [t | t^ | fv, z] (< A, v > z | S)
+    crl [C-Withdraw] : [t | t^ | fv | Part] < withdraw A + C, v > y | S => { A withdraw v from y } [t | t^ | fv, z | Part] (< A, v > z | S)
                     if  z := fresh(fv) .
 
-    crl [C-AuthControl] : [t | t^ | fv] < (A, A^) : D + C, v > y | S => { A authorize D in y } [t | t^ | fv] (< (A, A^) : D, v > y | A [ y |> (A, A^) : D ] | S)
-                    if  strategy([t | t^ | fv] < (A, A^) : D, v > y | S, A authorize D in y) /\
+    crl [C-AuthControl] : [t | t^ | fv | Part] < (A, A^) : D + C, v > y | S => { A authorize D in y } [t | t^ | fv | Part] (< (A, A^) : D, v > y | A [ y |> (A, A^) : D ] | S)
+                    if  strategy([t | t^ | fv | Part] < (A, A^) : D, v > y | S, A authorize D in y) /\
                         None := (searchAuth A ((A, A^) : D) y S) .  *** check that branch D is not already authorized by A
 
-    crl [C-Control1] : [t | t^ | fv] < A^ : after t' : D + C, v > y | S => {l'} [t | t^ | fv'] S'
+    crl [C-Control1] : [t | t^ | fv | Part] < A^ : after t' : D + C, v > y | S => {l'} [t | t^ | fv' | Part] S'
                     if  t >= t' /\                                                      *** timelocks satisfied
                         Some (S'' S''') := (searchAuth A^ (A^ : after t' : D) y S) /\   *** S'' are authorizations, S''' ==  S \ S''
-                        [t | t^ | fv] < D, v > y | S''' => {l'} [t | t^ | fv'] S' /\
+                        [t | t^ | fv | Part] < D, v > y | S''' => {l'} [t | t^ | fv' | Part] S' /\
                         Some y == cv(l') .                                              *** withdraw/split/put-reveal
 
-    crl [C-Control2] : [t | t^ | fv] < after t' : D + C, v > y | S => {l'} [t | t^ | fv'] S'
+    crl [C-Control2] : [t | t^ | fv | Part] < after t' : D + C, v > y | S => {l'} [t | t^ | fv' | Part] S'
                     if  t >= t' /\                                                      *** timelocks satisfied
-                        [t | t^ | fv] < D, v > y | S => {l'} [t | t^ | fv'] S' /\       *** D progresses
+                        [t | t^ | fv | Part] < D, v > y | S => {l'} [t | t^ | fv' | Part] S' /\       *** D progresses
                         Some y == cv(l') .                                              *** withdraw/split/put-reveal
 
-    crl [C-Control3] : [t | t^ | fv] < A^ : D + C, v > y | S => {l'} [t | t^ | fv'] S'
+    crl [C-Control3] : [t | t^ | fv | Part] < A^ : D + C, v > y | S => {l'} [t | t^ | fv' | Part] S'
                     if  Some (S'' S''') := (searchAuth A^ (A^ : D) y S) /\              *** S'' are authorizations, S''' == S \ S''
-                        [t | t^ | fv] < D, v > y | S''' => {l'} [t | t^ | fv'] S' /\    *** D progresses
+                        [t | t^ | fv | Part] < D, v > y | S''' => {l'} [t | t^ | fv' | Part] S' /\    *** D progresses
                         Some y == cv(l') .                                              *** withdraw/split/put-reveal
 
-    crl [Delay] : [t | t^ | fv] S => {delta (t' + - t)} [t' | t'^ | fv] S 
+    crl [Delay] : [t | t^ | fv | Part] S => {delta (t' + - t)} [t' | t'^ | fv | Part] S 
                     if t^ =/= nil /\ t' := head(t^) /\ t'^ := tail(t^) .
 
 endm
@@ -754,10 +831,11 @@ mod BITML-PREDS is
     var t^ : List{Nat<} .
     var fv : Set{Name} .
     var l : Label .
+    var Part : Set{Participant} .
 
     eq < C, v > x | S |= contract-free = false .
-    eq [t | t^ | fv ] S |= contract-free = S |= contract-free .
-    eq {l} [t | t^ | fv ] S |= contract-free = S |= contract-free .
+    eq [t | t^ | fv | Part] S |= contract-free = S |= contract-free .
+    eq {l} [t | t^ | fv | Part] S |= contract-free = S |= contract-free .
     eq S:Configuration |= contract-free = true [owise] .
     eq S:SemConfiguration |= contract-free = true [owise] .
     eq S:LSemConfiguration |= contract-free = true [owise] .
@@ -880,11 +958,12 @@ mod Example-2.0 is
     op S : -> SemConfiguration .
 
     *** deposit
-    eq S = [0 | 0 4 | x] < A, v > x .
+    eq S = [0 | 0 4 | x | A] < A, v > x .
 
     *** strategy
     ***     A does not authorize to destroy the deposit x
-    eq strategy([t:Nat | t^:List{Nat<} | fv:Set{Name}] S:Configuration, A authorize-destroy-of x) = t:Nat >= 5 .
+    eq strategy([t:Nat | t^:List{Nat<} | fv:Set{Name} | Part:Set{Participant}] S:Configuration, A authorize-destroy-of x) = 
+        t:Nat >= 5 .
 endm
 
 ***
@@ -934,13 +1013,13 @@ mod Example-LOTTERY is
     *** strategies
 
     *** No one destroy a deposit
-    eq strategy(S:SemConfiguration, A:Participant authorize-destroy-of x:Name) = false .
+    ***eq strategy(S:SemConfiguration, A:Participant authorize-destroy-of x:Name) = false .
 
     *** A reveals any secret (default any participant reveals any secret)
     ***eq strategy(S:SemConfiguration, A reveal a:Secret) = true .
 
     *** B does not reveal any secret
-    eq strategy(S:SemConfiguration, A reveal a:Secret) = false .
+    eq strategy(S:SemConfiguration, B reveal a:Secret) = false .
 
     *** No one reveal a secret
     ***eq strategy(S:SemConfiguration, A:Participant reveal a:Secret) = false .

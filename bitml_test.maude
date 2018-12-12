@@ -1,9 +1,8 @@
-cd /home/nicola/repositories/bitml-maude
-load bitml.maude
 
+load /usr/share/maude/full-maude.maude
+load /home/nicola/repositories/bitml-maude/bitml.maude
+load /home/nicola/repositories/MUnit/mUnit.maude
 
-cd /home/nicola/repositories/MUnit
-load mUnit.maude
 (munit BITML-CHECK-TEST is
 	***
 	***    assertEqual(t, t')
