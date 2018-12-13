@@ -804,7 +804,7 @@ smod BITML-STRAT is
       | C-Control3{all\delay} ) .
 
     sd bitml-1step := all\delay or-else Delay .
-    sd bitml := bitml-1step ! ; idle .
+    sd bitml := bitml-1step ! .
 
     *** Examples
     *** srew [1] in BITML-STRAT : S(WIN') using bitml ! .
