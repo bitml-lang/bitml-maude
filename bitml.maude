@@ -659,7 +659,7 @@ mod BITML-SEM is
     protecting BITML-UTILS .
     protecting BITML-PREDICATE-SAT .
     
-    var A B A' B' A'' B'' : Participant .
+    var A B A' B' A'' B'' Any : Participant .
     var Part : Set{Participant} .
     var C C' : Contract .
     var D D' : GuardedContract .
@@ -700,20 +700,22 @@ mod BITML-SEM is
 
     *** Labels
     sort Label .
-    op delta_ : Nat -> Label [ctor frozen] .
-    op _withdraw_from_ : Participant Value Name -> Label [ctor frozen] .
-    op split_ : Name -> Label [ctor frozen] .
-    op destroy_ : Name -> Label [ctor frozen] .
-    op put : Set{Name} Set{Secret} Name -> Label [ctor frozen] .
+    
     op _authorize-destroy-of_ : Participant Name -> Label [ctor frozen] .
+    op _destroy_ : Participant Name -> Label [ctor frozen] .
+    op _split_ : Participant Name -> Label [ctor frozen] .
+    op _put(_,_,_) : Participant Set{Name} Set{Secret} Name -> Label [ctor frozen] .
     op _reveal_ : Participant Secret  -> Label [ctor frozen] .
+    op _ do withdraw _ _ from _ : Participant Participant Value Name -> Label [ctor frozen] .
     op _authorize_in_ : Participant Contract Name -> Label [ctor frozen] .
+
+    op delta_ : Nat -> Label [ctor frozen] .
 
     *** cv(l) : get the name from a label l
     op cv(_) : Label -> Option .
-    eq cv(A withdraw v from x) = Some x .
-    eq cv(split(x)) = Some x .
-    eq cv(put(x^,a^,y)) = Some y .
+    eq cv(Any do withdraw A v from x) = Some x .
+    eq cv(Any split(x)) = Some x .
+    eq cv(Any put(x^,a^,y)) = Some y .
     eq cv(l) = None [owise].
 
     *** strategies
@@ -722,8 +724,10 @@ mod BITML-SEM is
 
     *** Allow progression of labelled configuration (timed)
     
-    crl [Rifl] : {l} [t | t^ | fv | Part] S => [t' | t'^ | fv' | Part] S' 
+    crl [Rifl] : {l} [t | t^ | fv | Part] S => {l'} [t' | t'^ | fv' | Part] S' 
         if  [t | t^ | fv | Part] S => {l'} [t' | t'^ | fv' | Part] S' .
+
+    rl [Finalize] : {l} [t | t^ | fv | Part] S => [t | t^ | fv | Part] S .
 
     ***
     *** [t | t^ | fv] S => {l} [t' | t'^ | fv'] S'    
@@ -732,13 +736,16 @@ mod BITML-SEM is
                     if  strategy([t | t^ | fv | Part] < A , v > x | S, A authorize-destroy-of x) /\
                         None := (searchAuthDestroy A x S) .  *** check that A has not already authorized to destroy x
 
-    rl [Dep-Destroy] : [t | t^ | fv | Part] < A , v > x | A [ x |># ] | S => { destroy x } [t | t^ | fv | Part] S .
+    crl [Dep-Destroy] : [t | t^ | fv | Any, Part] < A , v > x | A [ x |># ] | S => { Any destroy x } [t | t^ | fv | Any, Part] S 
+                    if  strategy([t | t^ | fv | Any, Part] < A , v > x | A [ x |># ] | S, Any destroy x) .
 
-    crl [C-Split] : [t | t^ | fv | Part] < (split (splitEntries) ) + C, v > y | S => { split(y) } [t | t^ | fv, fv' | Part] ((|| splitEntries fv') | S )
-                    if fv' := fresh(fv,size(splitEntries)) .
+    crl [C-Split] : [t | t^ | fv | Any, Part] < (split (splitEntries) ) + C, v > y | S => { Any split(y) } [t | t^ | fv, fv' | Any, Part] ((|| splitEntries fv') | S )
+                    if  strategy([t | t^ | fv | Any, Part] < (split (splitEntries) ) + C, v > y | S, Any split(y)) /\
+                        fv' := fresh(fv,size(splitEntries)) .
 
-    crl [C-PutReveal] : [t | t^ | fv | Part] (< (put x^ reveal a^ if p . C) + C', v > y | S) => { put(x^,a^,y) } [t | t^ | fv, z | Part] ( < C, v > z | S'')
-                    if  z := fresh(fv) /\ 
+    crl [C-PutReveal] : [t | t^ | fv | Any, Part] < (put x^ reveal a^ if p . C) + C', v > y | S => { Any put(x^,a^,y) } [t | t^ | fv, z | Any, Part] ( < C, v > z | S'')
+                    if  strategy([t | t^ | fv | Any, Part] < (put x^ reveal a^ if p . C) + C', v > y | S, Any put(x^,a^,y)) /\
+                        z := fresh(fv) /\ 
                         Some (S' S'') := (deposits x^ S) /\ *** fetch all deposits x^ in S (S' are deposits in S, S'' == S \ S')
                         Some S''' := (secrets a^ S'') /\    *** fetch all secrets a^ in S
                         S''' |= predicate p .
@@ -746,8 +753,9 @@ mod BITML-SEM is
     crl [C-AuthRev] : [t | t^ | fv | Part] {A : a # N} | S => { A reveal a } [t | t^ | fv | Part] (A : a # N | S) 
                     if  strategy([t | t^ | fv | Part] {A : a # N} | S, A reveal a) .
 
-    crl [C-Withdraw] : [t | t^ | fv | Part] < withdraw A + C, v > y | S => { A withdraw v from y } [t | t^ | fv, z | Part] (< A, v > z | S)
-                    if  z := fresh(fv) .
+    crl [C-Withdraw] : [t | t^ | fv | Any, Part] < withdraw A + C, v > y | S => { Any do withdraw A v from y } [t | t^ | fv, z | Any, Part] (< A, v > z | S)
+                    if  strategy([t | t^ | fv | Any, Part] < withdraw A + C, v > y | S, Any do withdraw A v from y) /\
+                        z := fresh(fv) .
 
     crl [C-AuthControl] : [t | t^ | fv | Part] < (A, A^) : D + C, v > y | S => { A authorize D in y } [t | t^ | fv | Part] (< (A, A^) : D, v > y | A [ y |> (A, A^) : D ] | S)
                     if  strategy([t | t^ | fv | Part] < (A, A^) : D, v > y | S, A authorize D in y) /\
@@ -791,7 +799,7 @@ smod BITML-STRAT is
     
     *** default Maude strategy
     sd default := all ! .
-    sd all\delay := Rifl{all\delay} or-else ( 
+    sd all\delay := Rifl{bitml-1step} or-else ( 
         Dep-AuthDestroy 
       | Dep-Destroy 
       | C-Split 
@@ -804,7 +812,7 @@ smod BITML-STRAT is
       | C-Control3{all\delay} ) .
 
     sd bitml-1step := all\delay or-else Delay .
-    sd bitml := bitml-1step ! .
+    sd bitml := bitml-1step ! ; Finalize .
 
     *** Examples
     *** srew [1] in BITML-STRAT : S(WIN') using bitml ! .
