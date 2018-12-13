@@ -717,6 +717,15 @@ mod BITML-SEM is
     eq cv(Any split(x)) = Some x .
     eq cv(Any put(x^,a^,y)) = Some y .
     eq cv(l) = None [owise].
+    
+    op part(_) : Label -> Participant .
+    eq part(Any authorize-destroy-of x) = Any .
+    eq part(Any destroy x) = Any .
+    eq part(Any split(x)) = Any .
+    eq part(Any put(x^,a^,y)) = Any .
+    eq part(Any do withdraw A v from x) = Any .
+    eq part(Any authorize D in x) = Any .
+    
 
     *** strategies
     op strategy : SemConfiguration Label -> Bool [memo] .
