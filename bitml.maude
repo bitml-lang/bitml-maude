@@ -696,7 +696,7 @@ mod BITML-SEM is
     op {_}_ : Label SemConfiguration -> LSemConfiguration [ctor frozen] .
     
     op toSemConf_ : Configuration -> SemConfiguration [prec 50] .
-    eq toSemConf S = [ 0 | ticks(S) | (names in S) | (participants in S) ] S .
+    eq toSemConf S = [ 0 | ticks(S) | (names in S) | (participants in S), Adv ] S .
 
     *** Labels
     sort Label .
@@ -766,8 +766,8 @@ mod BITML-SEM is
                     if  strategy([t | t^ | fv | Any, Part] < withdraw A + C, v > y | S, Any do withdraw A v from y) /\
                         z := fresh(fv) .
 
-    crl [C-AuthControl] : [t | t^ | fv | Part] < (A, A^) : D + C, v > y | S => { A authorize D in y } [t | t^ | fv | Part] (< (A, A^) : D, v > y | A [ y |> (A, A^) : D ] | S)
-                    if  strategy([t | t^ | fv | Part] < (A, A^) : D, v > y | S, A authorize D in y) /\
+    crl [C-AuthControl] : [t | t^ | fv | Part] < (A, A^) : D + C, v > y | S => { A authorize D in y } [t | t^ | fv | Part] (< (A, A^) : D + C, v > y | A [ y |> (A, A^) : D ] | S)
+                    if  strategy([t | t^ | fv | Part] < (A, A^) : D + C, v > y | S, A authorize D in y) /\
                         None := (searchAuth A ((A, A^) : D) y S) .  *** check that branch D is not already authorized by A
 
     crl [C-Control1] : [t | t^ | fv | Part] < A^ : after t' : D + C, v > y | S => {l'} [t | t^ | fv' | Part] S'
@@ -1055,3 +1055,5 @@ endsm
 
 *** red in LOTTERY-CHECK : modelCheck(LOTTERY, <> contract-free, 'bitml) .
 *** red in LOTTERY-CHECK : modelCheck(LIQUID-LOTTERY, <> contract-free, 'bitml) .
+
+*** srew toSemConf < B : withdraw A + withdraw B, 10 BTC > 'x using bitml ! .
