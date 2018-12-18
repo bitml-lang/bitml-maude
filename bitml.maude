@@ -777,8 +777,8 @@ mod BITML-SEM is
     crl [C-LockAuthRev] : [t | t^ | fv | Part] {A : a # N} | S => { A lock-reveal a } [t | t^ | fv | Part] Lock({A : a # N}) | S 
                     if  strategy([t | t^ | fv | Part] {A : a # N} | S, A lock-reveal a) .
 
-    crl [C-Withdraw] : [t | t^ | fv | Any, Part] < withdraw A + C, v > y | S => { Any do withdraw A v from y } [t | t^ | fv, z | Any, Part] (< A, v > z | S)
-                    if  strategy([t | t^ | fv | Any, Part] < withdraw A + C, v > y | S, Any do withdraw A v from y) /\
+    crl [C-Withdraw] : [t | t^ | fv | Part] < withdraw A + C, v > y | S => { Someone do withdraw A v from y } [t | t^ | fv, z | Part] (< A, v > z | S)
+                    if  strategy([t | t^ | fv | Part] < withdraw A + C, v > y | S, Someone do withdraw A v from y) /\
                         z := fresh(fv) .
 
     crl [C-AuthControl] : [t | t^ | fv | Part] < (A, A^) : D + C, v > y | S => { A authorize D in y } [t | t^ | fv | Part] (< (A, A^) : D + C, v > y | A [ y |> (A, A^) : D ] | S)
@@ -858,7 +858,10 @@ mod BITML-PREDS is
 
     subsort LSemConfiguration < State .
     op contract-free : -> Prop .
+    op _has-deposit : Participant -> Prop .
+    op _has-deposit>=_ : Participant Value -> Prop .
 
+    var A : Participant .
     var C : Contract .
     var v : Value .
     var x : Name .
@@ -868,6 +871,7 @@ mod BITML-PREDS is
     var fv : Set{Name} .
     var l : Label .
     var Part : Set{Participant} .
+    var n m : Nat .
 
     eq < C, v > x | S |= contract-free = false .
     eq [t | t^ | fv | Part] S |= contract-free = S |= contract-free .
@@ -875,6 +879,20 @@ mod BITML-PREDS is
     eq S:Configuration |= contract-free = true [owise] .
     eq S:SemConfiguration |= contract-free = true [owise] .
     eq S:LSemConfiguration |= contract-free = true [owise] .
+
+    eq < A, v > x | S |= A has-deposit = true .
+    eq [t | t^ | fv | Part] S |= A has-deposit = S |= A has-deposit .
+    eq {l} [t | t^ | fv | Part] S |= A has-deposit = S |= A has-deposit .
+    eq S:Configuration |= A has-deposit = false [owise] .
+    eq S:SemConfiguration |= A has-deposit = false [owise] .
+    eq S:LSemConfiguration |= A has-deposit = false [owise] .
+
+    eq < A, n BTC > x | S |= A has-deposit>= m BTC = n >= m .
+    eq [t | t^ | fv | Part] S |= A has-deposit>= v = S |= A has-deposit>= v .
+    eq {l} [t | t^ | fv | Part] S |= A has-deposit>= v = S |= A has-deposit>= v .
+    eq S:Configuration |= A has-deposit>= v = false [owise] .
+    eq S:SemConfiguration |= A has-deposit>= v = false [owise] .
+    eq S:LSemConfiguration |= A has-deposit>= v = false [owise] .
 endm
 
 smod BITML-CHECK is
@@ -1003,11 +1021,10 @@ mod Example-2.0 is
 endm
 
 ***
-*** Example Example-LOTTERY
+*** Examples Example-LIQUIDITY
 ***
-***     rewrite in Example-LOTTERY : S(WIN) .
 ***
-mod Example-LOTTERY is
+mod Examples-LIQUIDITY is
     protecting BITML .
 
     ops A B : -> Participant .
@@ -1017,7 +1034,7 @@ mod Example-LOTTERY is
     op LOTTERY : -> SemConfiguration .
     op LIQUID-LOTTERY : -> SemConfiguration .
     op S : Contract -> SemConfiguration .
-    ops WIN WIN' : -> Contract .
+    ops WIN WIN' TC TC' TC'' : -> Contract .
 
     eq t = 10 .
     eq t' = 15 .
@@ -1046,6 +1063,22 @@ mod Example-LOTTERY is
             + (after t' : reveal a . withdraw A)
             + (after t' : reveal b . withdraw B) .
 
+
+    eq TC = reveal a . withdraw A + after t : withdraw B .
+    eq TC' = reveal a . reveal b . split(
+            1 BTC ~> (withdraw A)
+            1 BTC ~> (withdraw B)
+        )
+        + after t : withdraw B .
+    eq TC'' = reveal a . (
+            reveal b . split(
+	            1 BTC ~> (withdraw A)
+	            1 BTC ~> (withdraw B)
+	        )
+	        + after t' : withdraw A
+        )
+        + after t : withdraw B .
+
     *** strategies
 
     *** A never locks her secrets
@@ -1054,8 +1087,8 @@ mod Example-LOTTERY is
     *** A never locks her authorizations
     eq strategy(S:SemConfiguration, A lock D:GuardedContract in x:Name) = false .
 
-    *** No one destroy a deposit
-    ***eq strategy(S:SemConfiguration, A:Participant authorize-destroy-of x:Name) = false .
+    *** No one destroys a deposit
+    eq strategy(S:SemConfiguration, A:Participant authorize-destroy-of x:Name) = false .
 
     *** A reveals any secret (default any participant reveals any secret)
     ***eq strategy(S:SemConfiguration, A reveal a:Secret) = true .
@@ -1073,13 +1106,13 @@ mod Example-LOTTERY is
     ***eq strategy(S:SemConfiguration, A:Participant authorize D:Contract in y:Name) = false .
 endm
 
-smod LOTTERY-CHECK is 
+smod LIQUIDITY-CHECK is
     protecting BITML-CHECK .
-    including Example-LOTTERY .
+    including Examples-LIQUIDITY .
 endsm
 
-*** red in LOTTERY-CHECK : modelCheck(LOTTERY, <> contract-free, 'bitml) .
-*** red in LOTTERY-CHECK : modelCheck(LIQUID-LOTTERY, <> contract-free, 'bitml) .
+*** red in LIQUIDITY-CHECK : modelCheck(LOTTERY, <> contract-free, 'bitml) .
+*** red in LIQUIDITY-CHECK : modelCheck(LIQUID-LOTTERY, <> contract-free, 'bitml) .
 
 *** srew toSemConf < B : withdraw A + withdraw B, 10 BTC > 'x using bitml ! .
 
@@ -1102,5 +1135,12 @@ rewrites: 234 in 3ms cpu (1ms real) (70375 rewrites/second)
 reduce in LOTTERY-CHECK : modelCheck(toSemConf < after 10 : withdraw A + reveal a . withdraw B, 1 BTC > 'x | {B : a # N}, <> contract-free, 'bitml) .
 rewrites: 120 in 3ms cpu (1ms real) (36003 rewrites/second)
 result Bool: true
+
+==========================================
+reduce in LIQUIDITY-CHECK : modelCheck(toSemConf < TC'', 2 BTC > 'x | {A : a # 10} | {B : b # 15}, <> A has-deposit, 'bitml) .
+rewrites: 362 in 3ms cpu (4ms real) (108610 rewrites/second)
+result Bool: true
+
+
 )
 
