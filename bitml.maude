@@ -709,6 +709,7 @@ mod BITML-SEM is
     op _lock-reveal_ : Participant Secret  -> Label [ctor frozen] .
     op _ do withdraw _ _ from _ : Participant Participant Value Name -> Label [ctor frozen] .
     op _authorize_in_ : Participant Contract Name -> Label [ctor frozen] .
+    op _lock_in_ : Participant Contract Name -> Label [ctor frozen] .
 
     op delta_ : Nat -> Label [ctor frozen] .
 
@@ -728,6 +729,7 @@ mod BITML-SEM is
     eq part(Any lock-reveal a) = Any .
     eq part(Any do withdraw A v from x) = Any .
     eq part(Any authorize D in x) = Any .
+    eq part(Any lock D in x) = Any .
     
     sort LockContract .
     sort LockSecretReveal .
@@ -782,6 +784,9 @@ mod BITML-SEM is
     crl [C-AuthControl] : [t | t^ | fv | Part] < (A, A^) : D + C, v > y | S => { A authorize D in y } [t | t^ | fv | Part] (< (A, A^) : D + C, v > y | A [ y |> (A, A^) : D ] | S)
                     if  strategy([t | t^ | fv | Part] < (A, A^) : D + C, v > y | S, A authorize D in y) /\
                         None := (searchAuth A ((A, A^) : D) y S) .  *** check that branch D is not already authorized by A
+
+    crl [C-LockAuthControl] : [t | t^ | fv | Part] < (A, A^) : D + C, v > y | S => { A lock D in y } [t | t^ | fv | Part] (< Lock((A, A^) : D) + C, v > y | S)
+                    if  strategy([t | t^ | fv | Part] < (A, A^) : D + C, v > y | S, A lock D in y) .
 
     crl [C-Control1] : [t | t^ | fv | Part] < A^ : after t' : D + C, v > y | S => {l'} [t | t^ | fv' | Part] S'
                     if  t >= t' /\                                                      *** timelocks satisfied
@@ -1042,8 +1047,12 @@ mod Example-LOTTERY is
             + (after t' : reveal b . withdraw B) .
 
     *** strategies
+
     *** A never locks her secrets
     eq strategy(S:SemConfiguration, A lock-reveal a:Secret) = false .
+
+    *** A never locks her authorizations
+    eq strategy(S:SemConfiguration, A lock D:GuardedContract in x:Name) = false .
 
     *** No one destroy a deposit
     ***eq strategy(S:SemConfiguration, A:Participant authorize-destroy-of x:Name) = false .
