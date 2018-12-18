@@ -858,6 +858,7 @@ mod BITML-PREDS is
 
     subsort LSemConfiguration < State .
     op contract-free : -> Prop .
+    op has-deposit : -> Prop .
     op _has-deposit : Participant -> Prop .
     op _has-deposit>=_ : Participant Value -> Prop .
 
@@ -880,12 +881,16 @@ mod BITML-PREDS is
     eq S:SemConfiguration |= contract-free = true [owise] .
     eq S:LSemConfiguration |= contract-free = true [owise] .
 
-    eq < A, v > x | S |= A has-deposit = true .
-    eq [t | t^ | fv | Part] S |= A has-deposit = S |= A has-deposit .
-    eq {l} [t | t^ | fv | Part] S |= A has-deposit = S |= A has-deposit .
-    eq S:Configuration |= A has-deposit = false [owise] .
-    eq S:SemConfiguration |= A has-deposit = false [owise] .
-    eq S:LSemConfiguration |= A has-deposit = false [owise] .
+    eq < A, n BTC > x | S |= has-deposit = true .
+    eq [t | t^ | fv | Part] S |= has-deposit = S |= has-deposit .
+    eq {l} [t | t^ | fv | Part] S |= has-deposit = S |= has-deposit .
+    eq S:Configuration |= has-deposit = false [owise] .
+    eq S:SemConfiguration |= has-deposit = false [owise] .
+    eq S:LSemConfiguration |= has-deposit = false [owise] .
+    
+    eq S:Configuration |= A has-deposit = S:Configuration |= A has-deposit>= 0 BTC .
+    eq S:SemConfiguration |= A has-deposit = S:SemConfiguration |= A has-deposit>= 0 BTC .
+    eq S:LSemConfiguration |= A has-deposit = S:LSemConfiguration |= A has-deposit>= 0 BTC .
 
     eq < A, n BTC > x | S |= A has-deposit>= m BTC = n >= m .
     eq [t | t^ | fv | Part] S |= A has-deposit>= v = S |= A has-deposit>= v .
@@ -1027,7 +1032,7 @@ endm
 mod Examples-LIQUIDITY is
     protecting BITML .
 
-    ops A B : -> Participant .
+    ops A B C : -> Participant .
     op v : -> Value .
     ops a b : -> Secret .
     ops t t' N M : -> Nat .
@@ -1065,11 +1070,15 @@ mod Examples-LIQUIDITY is
 
 
     eq TC = reveal a . withdraw A + after t : withdraw B .
-    eq TC' = reveal a . reveal b . split(
-            1 BTC ~> (withdraw A)
-            1 BTC ~> (withdraw B)
+    
+    eq TC' = reveal a . (
+            reveal b . split(
+	            1 BTC ~> (withdraw A)
+	            1 BTC ~> (withdraw B)
+	        )
         )
         + after t : withdraw B .
+
     eq TC'' = reveal a . (
             reveal b . split(
 	            1 BTC ~> (withdraw A)
