@@ -689,7 +689,7 @@ mod BITML-SEM is
     sort Context .
     
     op [_|_|_|_] : Nat List{Nat<} Set{Name} Set{Participant} -> Context [ctor frozen] .
-    op Adv : -> Participant .
+    ops Adv Someone : -> Participant .
     
     op __ : Context Configuration -> SemConfiguration [ctor frozen] .
 
@@ -755,15 +755,15 @@ mod BITML-SEM is
                     if  strategy([t | t^ | fv | Part] < A , v > x | S, A authorize-destroy-of x) /\
                         None := (searchAuthDestroy A x S) .  *** check that A has not already authorized to destroy x
 
-    crl [Dep-Destroy] : [t | t^ | fv | Any, Part] < A , v > x | A [ x |># ] | S => { Any destroy x } [t | t^ | fv | Any, Part] S 
-                    if  strategy([t | t^ | fv | Any, Part] < A , v > x | A [ x |># ] | S, Any destroy x) .
+    crl [Dep-Destroy] : [t | t^ | fv | Part] < A , v > x | A [ x |># ] | S => { Someone destroy x } [t | t^ | fv | Part] S 
+                    if  strategy([t | t^ | fv | Part] < A , v > x | A [ x |># ] | S, Someone destroy x) .
 
-    crl [C-Split] : [t | t^ | fv | Any, Part] < (split (splitEntries) ) + C, v > y | S => { Any split(y) } [t | t^ | fv, fv' | Any, Part] ((|| splitEntries fv') | S )
-                    if  strategy([t | t^ | fv | Any, Part] < (split (splitEntries) ) + C, v > y | S, Any split(y)) /\
+    crl [C-Split] : [t | t^ | fv | Part] < (split (splitEntries) ) + C, v > y | S => { Someone split(y) } [t | t^ | fv, fv' | Part] ((|| splitEntries fv') | S )
+                    if  strategy([t | t^ | fv | Part] < (split (splitEntries) ) + C, v > y | S, Someone split(y)) /\
                         fv' := fresh(fv,size(splitEntries)) .
 
-    crl [C-PutReveal] : [t | t^ | fv | Any, Part] < (put x^ reveal a^ if p . C) + C', v > y | S => { Any put(x^,a^,y) } [t | t^ | fv, z | Any, Part] ( < C, v > z | S'')
-                    if  strategy([t | t^ | fv | Any, Part] < (put x^ reveal a^ if p . C) + C', v > y | S, Any put(x^,a^,y)) /\
+    crl [C-PutReveal] : [t | t^ | fv | Part] < (put x^ reveal a^ if p . C) + C', v > y | S => { Someone put(x^,a^,y) } [t | t^ | fv, z | Part] ( < C, v > z | S'')
+                    if  strategy([t | t^ | fv | Part] < (put x^ reveal a^ if p . C) + C', v > y | S, Someone put(x^,a^,y)) /\
                         z := fresh(fv) /\ 
                         Some (S' S'') := (deposits x^ S) /\ *** fetch all deposits x^ in S (S' are deposits in S, S'' == S \ S')
                         Some S''' := (secrets a^ S'') /\    *** fetch all secrets a^ in S
@@ -1043,7 +1043,7 @@ mod Example-LOTTERY is
 
     *** strategies
     *** A never locks her secrets
-    ***eq strategy(S:SemConfiguration, A lock-reveal a:Secret) = false .
+    eq strategy(S:SemConfiguration, A lock-reveal a:Secret) = false .
 
     *** No one destroy a deposit
     ***eq strategy(S:SemConfiguration, A:Participant authorize-destroy-of x:Name) = false .
