@@ -49,7 +49,7 @@ fmod BITML-SORTS is
     ***
     sort Contract .         *** C
     sort GuardedContract .  *** D
-    sort PutReveal .        *** put x^ & reveal a^ if p
+    sort PutReveal .        *** put x^ & reveal a^ if p . C
     sort Withdraw .         *** withdraw A
     sort Split .            *** split ( v -> C, v' -> C' ... )
     sort AuthC .            *** A: D
@@ -696,7 +696,7 @@ mod BITML-SEM is
     op {_}_ : Label SemConfiguration -> LSemConfiguration [ctor frozen] .
     
     op toSemConf_ : Configuration -> SemConfiguration [prec 50] .
-    eq toSemConf S = [ 0 | ticks(S) | (names in S) | (participants in S), Adv ] S .
+    eq toSemConf S = [ 0 | ticks(S) | (names in S) | (participants in S) ] S .
 
     *** Labels
     sort Label .
@@ -706,6 +706,7 @@ mod BITML-SEM is
     op _split_ : Participant Name -> Label [ctor frozen] .
     op _put(_,_,_) : Participant Set{Name} Set{Secret} Name -> Label [ctor frozen] .
     op _reveal_ : Participant Secret  -> Label [ctor frozen] .
+    op _lock-reveal_ : Participant Secret  -> Label [ctor frozen] .
     op _ do withdraw _ _ from _ : Participant Participant Value Name -> Label [ctor frozen] .
     op _authorize_in_ : Participant Contract Name -> Label [ctor frozen] .
 
@@ -723,9 +724,18 @@ mod BITML-SEM is
     eq part(Any destroy x) = Any .
     eq part(Any split(x)) = Any .
     eq part(Any put(x^,a^,y)) = Any .
+    eq part(Any reveal a) = Any .
+    eq part(Any lock-reveal a) = Any .
     eq part(Any do withdraw A v from x) = Any .
     eq part(Any authorize D in x) = Any .
     
+    sort LockContract .
+    sort LockSecretReveal .
+    subsort LockContract < Contract .
+    subsort LockSecretReveal < Configuration .
+    
+    op Lock : Contract -> LockContract [ctor frozen] .
+    op Lock : ConfSec -> LockSecretReveal [ctor frozen] .
 
     *** strategies
     op strategy : SemConfiguration Label -> Bool [memo] .
@@ -761,6 +771,9 @@ mod BITML-SEM is
 
     crl [C-AuthRev] : [t | t^ | fv | Part] {A : a # N} | S => { A reveal a } [t | t^ | fv | Part] (A : a # N | S) 
                     if  strategy([t | t^ | fv | Part] {A : a # N} | S, A reveal a) .
+
+    crl [C-LockAuthRev] : [t | t^ | fv | Part] {A : a # N} | S => { A lock-reveal a } [t | t^ | fv | Part] Lock({A : a # N}) | S 
+                    if  strategy([t | t^ | fv | Part] {A : a # N} | S, A lock-reveal a) .
 
     crl [C-Withdraw] : [t | t^ | fv | Any, Part] < withdraw A + C, v > y | S => { Any do withdraw A v from y } [t | t^ | fv, z | Any, Part] (< A, v > z | S)
                     if  strategy([t | t^ | fv | Any, Part] < withdraw A + C, v > y | S, Any do withdraw A v from y) /\
@@ -803,25 +816,26 @@ smod BITML-STRAT is
     
     strat default @ SemConfiguration .
     strat all\delay @ SemConfiguration .
-    strat bitml-1step @ SemConfiguration .
+    strat bitml-1 @ SemConfiguration .
     strat bitml @ SemConfiguration .
     
     *** default Maude strategy
     sd default := all ! .
-    sd all\delay := Rifl{bitml-1step} or-else ( 
-        Dep-AuthDestroy 
-      | Dep-Destroy 
-      | C-Split 
-      | C-PutReveal 
-      | C-AuthRev 
-      | C-Withdraw 
-      | C-AuthControl 
-      | C-Control1{all\delay} 
-      | C-Control2{all\delay} 
+    sd all\delay := Rifl{bitml-1} or-else (
+        Dep-AuthDestroy
+      | Dep-Destroy
+      | C-Split
+      | C-PutReveal
+      | C-AuthRev
+      | C-LockAuthRev
+      | C-Withdraw
+      | C-AuthControl
+      | C-Control1{all\delay}
+      | C-Control2{all\delay}
       | C-Control3{all\delay} ) .
 
-    sd bitml-1step := all\delay or-else Delay .
-    sd bitml := bitml-1step ! ; Finalize .
+    sd bitml-1 := all\delay or-else Delay .
+    sd bitml := bitml-1 ! ; Finalize .
 
     *** Examples
     *** srew [1] in BITML-STRAT : S(WIN') using bitml ! .
@@ -1028,6 +1042,8 @@ mod Example-LOTTERY is
             + (after t' : reveal b . withdraw B) .
 
     *** strategies
+    *** A never locks her secrets
+    ***eq strategy(S:SemConfiguration, A lock-reveal a:Secret) = false .
 
     *** No one destroy a deposit
     ***eq strategy(S:SemConfiguration, A:Participant authorize-destroy-of x:Name) = false .
@@ -1036,7 +1052,7 @@ mod Example-LOTTERY is
     ***eq strategy(S:SemConfiguration, A reveal a:Secret) = true .
 
     *** B does not reveal any secret
-    eq strategy(S:SemConfiguration, B reveal a:Secret) = false .
+    ***eq strategy(S:SemConfiguration, B reveal a:Secret) = false .
 
     *** No one reveal a secret
     ***eq strategy(S:SemConfiguration, A:Participant reveal a:Secret) = false .
@@ -1057,3 +1073,25 @@ endsm
 *** red in LOTTERY-CHECK : modelCheck(LIQUID-LOTTERY, <> contract-free, 'bitml) .
 
 *** srew toSemConf < B : withdraw A + withdraw B, 10 BTC > 'x using bitml ! .
+
+***(
+==========================================
+srewrite in LOTTERY-CHECK : toSemConf < after 10 : withdraw A + reveal a . withdraw B, 1 BTC > 'x | {B : a # N} using bitml .
+
+Solution 1
+rewrites: 225 in 3ms cpu (1ms real) (67669 rewrites/second)
+result SemConfiguration: [10 | nil | 'x, 'x0 | A, B] Lock({B : a # 1}) | < A, 1 BTC > 'x0
+
+Solution 2
+rewrites: 234 in 3ms cpu (1ms real) (70375 rewrites/second)
+result SemConfiguration: [10 | nil | 'x, 'x0, 'x1 | A, B] < B, 1 BTC > 'x1 | B : a # 1
+
+No more solutions.
+rewrites: 234 in 3ms cpu (1ms real) (70375 rewrites/second)
+
+==========================================
+reduce in LOTTERY-CHECK : modelCheck(toSemConf < after 10 : withdraw A + reveal a . withdraw B, 1 BTC > 'x | {B : a # N}, <> contract-free, 'bitml) .
+rewrites: 120 in 3ms cpu (1ms real) (36003 rewrites/second)
+result Bool: true
+)
+
