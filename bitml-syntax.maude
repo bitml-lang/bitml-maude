@@ -132,6 +132,10 @@ view Participant from TRIV to BITML-SORTS is
     sort Elt to Participant .
 endv
 
+view Predicate from TRIV to BITML-SORTS is
+    sort Elt to Predicate .
+endv
+
 ***
 *** Bitml Syntax Cnnstructors
 ***
