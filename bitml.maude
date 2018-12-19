@@ -21,6 +21,47 @@ fmod BITML-PREDICATE-SAT is
     var A : Participant .
     vars E E' E'' : Expression .
 
+    ***
+    *** Extra operations
+    ***
+    op _||_ : Predicate Predicate -> Predicate [prec 25 comm] .
+    op _<=_ : Expression Expression -> Predicate [prec 22] .
+    op _>_ : Expression Expression -> Predicate [prec 22] .
+    op _>=_ : Expression Expression -> Predicate [prec 22] .
+    op _!=_ : Expression Expression -> Predicate [prec 22 comm] .
+    op _<=_<=_ : Expression Expression Expression -> Predicate [prec 22] .
+    op _<_<_ : Expression Expression Expression -> Predicate [prec 22] .
+    op _<=_<_ : Expression Expression Expression -> Predicate [prec 22] .
+    op _<_<=_ : Expression Expression Expression -> Predicate [prec 22] .
+    eq P || P' = !(! P && ! P') .
+    eq E <= E' = E < E' || E == E' .
+    eq E > E' = !(E <= E') .
+    eq E >= E' = !(E < E') .
+    eq E != E' = !(E == E') .
+    eq E <= E' <= E'' = E <= E' && E' <= E'' .
+    eq E < E' < E'' = E < E' && E' < E'' .
+    eq E <= E' < E'' = E <= E' && E' < E'' .
+    eq E < E' <= E'' = E < E' && E' <= E'' .
+
+    ***
+    *** Simplifications
+    ***
+    eq ! ! P = P .
+    eq ! True = False .
+    eq ! False = True .
+    eq True || P = True .
+    eq False || P = P .
+    eq True && P = P .
+    eq False && P = False .
+    
+    eq const(n) + const(m) = const(n + m) .
+    eq const(n) < const(m) = toExp  n < m .
+    eq const(n) == const(m) = toExp n == m .
+    eq | const(n) | = const( rat( ceiling( (log(float(n))) / (log(float(2))) / 7.0 ) ) ) .
+    eq | ref(a) | < const(0) = False .
+    eq | ref(a) | >= const(0) = True .
+    ceq E > const(m) && E > const(n) = E > const(m) if m > n .
+
     eq S |= predicate P = $eval P [ S ] == Success(true) .
     ceq S | S' |= predicate P = S |= predicate P or-else S' |= predicate P if S =/= 0 /\ S' =/= 0 .
     eq S |= predicate P = false [owise] .
@@ -30,61 +71,23 @@ fmod BITML-PREDICATE-SAT is
     eq toExp false = False .
 
     op $eval_[_] : Predicate Configuration -> Try .
-    ceq $eval P && P' [ S ] = Success(b and b') if Success(b) := $eval P [ S ] /\ Success(b') := $eval P' [ S ] .
-    ceq $eval P || P' [ S ] = Success(b or b') if Success(b) := $eval P [ S ] /\ Success(b') := $eval P' [ S ] .
-    ceq $eval ! P [ S ] = Success(not b) if Success(b) := $eval P [ S ] .
-    ceq $eval E != E' [ S ] = Success(n =/= m) if Success(n) := $eval E [ S ] /\ Success(m) := $eval E' [ S ] .
-    ceq $eval E == E' [ S ] = Success(n == m) if Success(n) := $eval E [ S ] /\ Success(m) := $eval E' [ S ] .
-    ceq $eval E < E' [ S ] = Success(n < m) if Success(n) := $eval E [ S ] /\ Success(m) := $eval E' [ S ] .
-    ceq $eval E <= E' [ S ] = Success(n <= m) if Success(n) := $eval E [ S ] /\ Success(m) := $eval E' [ S ] .
-    ceq $eval E > E' [ S ] = Success(n > m) if Success(n) := $eval E [ S ] /\ Success(m) := $eval E' [ S ] .
-    ceq $eval E >= E' [ S ] = Success(n >= m) if Success(n) := $eval E [ S ] /\ Success(m) := $eval E' [ S ] .
     eq $eval True [ S ] = Success(true) .
     eq $eval False [ S ] = Success(false) .
+    ceq $eval P && P' [ S ] = Success(b and b') if Success(b) := $eval P [ S ] /\ Success(b') := $eval P' [ S ] .
+    ceq $eval ! P [ S ] = Success(not b) if Success(b) := $eval P [ S ] .
+    ceq $eval E == E' [ S ] = Success(n == m) if Success(n) := $eval E [ S ] /\ Success(m) := $eval E' [ S ] .
+    ceq $eval E < E' [ S ] = Success(n < m) if Success(n) := $eval E [ S ] /\ Success(m) := $eval E' [ S ] .
     
     op $eval_[_] : Expression Configuration -> Try .
     eq $eval const(n) [ S ] = Success(n) .
     eq $eval | ref(a) | [ (A : a # N) | S ] = Success(N) .
     ceq $eval | E | [ S ] = Success(rat( ceiling( (log(float(n))) / (log(float(2))) / 7.0 ) ) ) if Success(n) := $eval E [ S ] .
     ceq $eval E + E' [ S ] = Success(n + m) if Success(n) := $eval E [ S ] /\ Success(m) := $eval E' [ S ] .
-    ceq $eval E - E' [ S ] = Success(n + - m) if Success(n) := $eval E [ S ] /\ Success(m) := $eval E' [ S ] .
 
     eq $eval P [ S ] = Failure("Unable to evaluate the predicate") [owise print "Error evaluating " P " in " S] .
     eq $eval E [ S ] = Failure("Unable to evaluate the expression") [owise print "Error evaluating " E " in " S] .
 
-    ***
-    *** Simplifications
-    ***
-    eq ! True = False .
-    eq ! False = True .
-    eq True || P = True .
-    eq False && P = False .
-    eq False || P = P .
-    eq True && P = P .
-    eq const(n) + const(m) = const(n + m) .
-    eq const(n) - const(m) = const(n + (- m)) .
-    eq const(n) < const(m) = toExp  n < m .
-    eq const(n) <= const(m) = toExp n <= m .
-    eq const(n) > const(m) = toExp n > m .
-    eq const(n) >= const(m) = toExp n >= m .
-    eq const(n) == const(m) = toExp n == m .
-    eq const(n) != const(m) = toExp n =/= m .
-    eq | const(n) | = const( rat( ceiling( (log(float(n))) / (log(float(2))) / 7.0 ) ) ) .
 
-    ***
-    *** Extra operations
-    ***
-    op _<=_<=_ : Expression Expression Expression -> Predicate .
-    eq E <= E' <= E'' = E <= E' && E' <= E'' .
-
-    op _<_<_ : Expression Expression Expression -> Predicate .
-    eq E < E' < E'' = E < E' && E' < E'' .
-
-    op _<=_<_ : Expression Expression Expression -> Predicate .
-    eq E <= E' < E'' = E <= E' && E' < E'' .
-
-    op _<_<=_ : Expression Expression Expression -> Predicate .
-    eq E < E' <= E'' = E < E' && E' <= E'' .
 endfm
 
 mod BITML-SEM is
