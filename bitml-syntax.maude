@@ -1,0 +1,261 @@
+*** 
+*** bitml-syntax.maude
+*** 
+***  
+***  
+*** It contains:
+*** - bitml sorts:          all sorts that are general enough to be available in all modules;
+***                         other modules may define other sort for specific tasks.
+***
+*** - views:                in order to use List and Set of our sorts, it is necessary to define
+***                         some views.
+***
+*** - bitml constructors:   constructors for the sorts; they reflects the bitml syntax.
+***
+*** - bitml structural equivalences
+***
+
+***
+*** Bitml Syntax Sorts
+***
+fmod BITML-SORTS is
+    protecting NAT .
+    protecting INT .
+    protecting FLOAT .
+    protecting STRING .
+    protecting CONVERSION .
+    protecting EXT-BOOL .   *** short-circuit operations _and-then_ _or-else_
+    protecting QID .
+
+    sort Participant .      *** A B
+    sort Value .            *** v v'
+    sort Name .             *** x x' y y'
+    sort Secret .           *** s s'
+    sort SplitEntry .       *** v -> C
+    sort AnonDeposit .      *** <A,v>
+    sort AnonContract .     *** <C,v>
+    subsort Qid < Name .    *** creates new names as qid (e.g. 'x 'y 'z 'x0 ...)
+
+    ***
+    *** Predicate
+    ***
+    sort Predicate .        *** p
+    sort True .             *** true
+    sort False .            *** false
+    sort And .              *** p && p
+    sort Or .               *** p || p
+    sort Not .              *** ! p
+    sort LT .               *** E < E
+    sort LET .              *** E <= E
+    sort GT .               *** E > E
+    sort GET .              *** E >= E
+    sort EQ .               *** E == E
+    sort NE .               *** E != E
+    subsorts True False And Or Not LT LET GT GET EQ NE < Predicate .
+
+    ***
+    *** Expression
+    ***
+    sort Expression .       *** E
+    sort Sum .              *** E + E
+    sort Minus .            *** E - E
+    sort Size .             *** |a|
+    sort SecretReference .  *** a
+    sort Constant .         *** N
+    subsort Sum Minus Size SecretReference Constant < Expression .
+
+    ***
+    *** Contract
+    ***
+    sort Contract .         *** C
+    sort GuardedContract .  *** D
+    sort PutReveal .        *** put x^ & reveal a^ if p . C
+    sort Withdraw .         *** withdraw A
+    sort Split .            *** split ( v -> C, v' -> C' ... )
+    sort AuthC .            *** A : D
+    sort After .            *** after t : D
+    subsorts PutReveal Withdraw Split AuthC After < GuardedContract < Contract .
+    
+    ***
+    *** Contract Preconditions
+    ***
+    sort ContractPrecondition .        *** G
+    sort VolDeposit .                  *** A: ?v @x
+    sort PerDeposit .                  *** A: !v @x
+    sort CommSecret .                  *** A: secret a
+    subsorts VolDeposit PerDeposit CommSecret < ContractPrecondition .
+    
+    ***
+    *** Configurations
+    ***
+    sort Configuration .        *** Gamma
+    sort AdvContract .          *** {G}C
+    sort ActContract .          *** <C,v>x
+    sort Deposit .              *** <A,v>x
+    sort Auth .                 *** A[chi] 
+    sort ConfSec .              *** {A:a#N}
+    sort ConfRev .              *** A:a#N
+    subsorts AdvContract ActContract Deposit Auth ConfSec ConfRev < Configuration .
+
+    ***
+    *** Authorization
+    ***
+    sort AuthAction .           *** chi
+    sort CommitSec .            *** # |> {G}C
+    sort SpendDep .             *** x |> {G}C
+    sort TakeBranch .           *** x |> D
+    sort Join .                 *** x,y |> <A,v>
+    sort Divide .               *** x |> <A,v> <A,v'>
+    sort Donate .               *** x |> B
+    sort Destroy .              *** x^,i |> y
+    subsort CommitSec SpendDep TakeBranch Join Divide Donate Destroy < AuthAction .
+endfm
+
+***
+*** Views allow reuse maude modules like List{X} and Set{X}
+***
+view Name from TRIV to BITML-SORTS is
+    sort Elt to Name .
+endv
+
+view Secret from TRIV to BITML-SORTS is
+    sort Elt to Secret .
+endv
+
+view Configuration from TRIV to BITML-SORTS is
+    sort Elt to Configuration .
+endv
+
+view SplitEntry from TRIV to BITML-SORTS is
+    sort Elt to SplitEntry .
+endv
+
+view Value from TRIV to BITML-SORTS is
+    sort Elt to Value .
+endv
+
+view Participant from TRIV to BITML-SORTS is
+    sort Elt to Participant .
+endv
+
+***
+*** Bitml Syntax Cnnstructors
+***
+fmod BITML-SYNTAX-CONS is
+    protecting BITML-SORTS .
+    protecting SET{Name} .
+    protecting SET{Secret} .
+    protecting LIST{SplitEntry} .
+    protecting LIST{Configuration} .
+    protecting LIST{Participant} .
+    protecting SET{Participant} .
+    protecting SORTABLE-LIST{Nat<} .
+    protecting LIST{Value} .
+
+    op P(_) : Qid -> Participant [ctor prec 5] .
+    op _BTC : Nat -> Value [ctor prec 5] .                                                  *** n BTC
+    op _~>_ : Value Contract -> SplitEntry [ctor prec 5 frozen format (ni d ++ --)] .       *** v' -> C
+    op <_,_> : Participant Value -> AnonDeposit [ctor prec 5 frozen format (d d d s d d)] . *** <A,v>
+    op <_,_> : Contract Value -> AnonContract [ctor prec 5 frozen format (d d d s d d)] .   *** <C,v>
+
+    ***
+    *** Predicates/Expressions
+    ***
+    op True : -> True [ctor] .
+    op False : -> False [ctor] .
+    op _||_ : Predicate Predicate -> Or [ctor prec 25 frozen comm] .
+    op _&&_ : Predicate Predicate -> And [ctor prec 24 frozen comm] .
+    op !_ : Predicate -> Not [ctor prec 23 frozen] .
+    op _<_ : Expression Expression -> LT [ctor prec 22 frozen] .
+    op _<=_ : Expression Expression -> LET [ctor prec 22 frozen] .
+    op _>_ : Expression Expression -> GT [ctor prec 22 frozen] .
+    op _>=_ : Expression Expression -> GET [ctor prec 22 frozen] .
+    op _==_ : Expression Expression -> NE [ctor prec 22 frozen comm] .
+    op _!=_ : Expression Expression -> NE [ctor prec 22 frozen comm] .
+
+    op _+_ : Expression Expression -> Sum [ctor prec 21 frozen comm] .
+    op _-_ : Expression Expression -> Minus [ctor prec 21 frozen comm] .
+    op |_| : Expression -> Size [ctor prec 21 frozen] .
+    op ref(_) : Secret -> SecretReference [ctor prec 21 frozen] .
+    op const(_) : Int -> Constant [ctor prec 21 frozen] .
+
+    ***
+    *** Contract 
+    ***
+    op 0 : -> Contract [ctor] .                                                                                     *** [contr.id]
+    op put_reveal_if_._ : Set{Name} Set{Secret} Predicate Contract -> PutReveal [ctor prec 25 frozen] .             *** [contr.put-reveal]
+    op withdraw_ : Participant -> Withdraw [ctor prec 25 frozen] .                                                  *** [contr.withdraw]
+    op _:_ : Set{Participant} GuardedContract -> AuthC [ctor prec 25 frozen] .                                      *** [contr.authorization]
+    op after_:_ : Nat GuardedContract -> After [ctor prec 25 frozen] .                                              *** [contr.after]
+    op split(_) : List{SplitEntry} -> Split [ctor prec 25 frozen format (d d ++i n--i d)] .                         *** [contr.split]
+    op _+_ : GuardedContract GuardedContract -> GuardedContract [comm assoc ctor id: 0 frozen format (d d d d)] .   *** [contr.sum]
+
+    ***
+    *** Contract Preconditions
+    ***
+    op 0 : -> ContractPrecondition [ctor] .                                                                *** [contr-pre.id]
+    op _?_@_ : Participant Value Name -> VolDeposit [ctor prec 25 frozen] .                                *** [contr-pre.vol-deposit]
+    op _!_@_ : Participant Value Name -> PerDeposit [ctor prec 25 frozen] .                                *** [contr-pre.perm-deposit]
+    op _secret_ : Participant Secret -> CommSecret [ctor prec 25 frozen] .                                 *** [contr-pre.commit-secret]
+    op _|_ : ContractPrecondition ContractPrecondition -> ContractPrecondition [comm assoc id: 0 frozen] . *** [contr-pre.paral]
+
+    ***
+    *** Configurations
+    ***
+    op 0 : -> Configuration [ctor] .                                                                            *** [conf.id]
+    op {_}_ : ContractPrecondition Contract -> AdvContract [ctor prec 35 frozen] .                              *** [conf.contract-advertised]
+    op __ : AnonContract Name -> ActContract [ctor prec 15 frozen format (d s d)] .                             *** [conf.active-contract]
+    op __ : AnonDeposit Name -> Deposit [ctor prec 15 frozen format (d s d)] .                                  *** [conf.deposit]
+    op _[_] : Participant AuthAction -> Auth [ctor prec 35 frozen] .                                            *** [conf.authorization]
+    op {_:_#_} : Participant Secret Nat -> ConfSec [ctor prec 35 frozen] .                                      *** [conf.committed-secret]
+    op _:_#_ : Participant Secret Nat -> ConfRev [ctor prec 35 frozen] .                                        *** [conf.revealed-secret]
+    op _|_ : Configuration Configuration -> Configuration [comm assoc ctor id: 0 frozen] .                      *** [conf.parallel]
+
+    ***
+    *** Authorization
+    ***
+    op _|>_ : Name GuardedContract -> TakeBranch [ctor frozen] .        *** [auth.take-branch]
+    op _|># : Name -> Destroy [ctor frozen] .                           *** [auth.destroy]
+endfm
+
+***
+*** Define structural equivalences
+***
+fmod BITML-STREQ is
+    protecting BITML-SYNTAX-CONS .
+    
+    var x^ : Set{Name} .
+    var a^ : Set{Secret} .
+    var C : Contract .
+    var p : Predicate .
+    vars A : Participant .
+    vars A^ : Set{Participant} .
+    var D : GuardedContract .
+    vars t t' : Nat .
+
+    op tau ._ : Contract -> PutReveal [prec 25 frozen] .
+    op put_._ : Set{Name} Contract -> PutReveal [prec 25 frozen] .
+    op put_if_._ : Set{Name} Predicate Contract -> PutReveal [prec 25 frozen] .
+    op reveal_._ : Set{Secret} Contract -> PutReveal [prec 25 frozen] .
+    op reveal_if_._ : Set{Secret} Predicate Contract -> PutReveal [prec 25 frozen] .
+    op put_reveal_._ : Set{Name} Set{Secret} Contract -> PutReveal [prec 25 frozen] .
+
+    eq tau . C              = put empty reveal empty if True . C .
+    eq put x^ . C           = put x^    reveal empty if True . C .
+    eq put x^ if p . C      = put x^    reveal empty if p    . C .
+    eq reveal a^ . C        = put empty reveal a^    if True . C .
+    eq reveal a^ if p . C   = put empty reveal a^    if p    . C .
+    eq put x^ reveal a^ . C = put x^    reveal a^    if True . C .
+    
+    eq empty : D = D .
+    eq A : A^ : D = (A, A^) : D .
+    eq A^ : A : D = (A, A^) : D .
+
+    eq after 0 : D = D .
+    eq after t : after t' : D = after max(t,t') : D .
+    eq after t : A : D = A : after t : D .
+endfm
+
+fmod BITML-SYNTAX is
+    protecting BITML-STREQ .
+endfm

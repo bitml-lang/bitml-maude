@@ -1,0 +1,270 @@
+***
+*** Auxiliary functions
+***
+*** Operations preceded by $ are intended for local use
+***
+fmod BITML-AUX is
+    protecting BITML-SYNTAX .
+    protecting SORTABLE-LIST-AND-SET{Nat<} .
+
+    vars C C' : Contract .
+    vars D D' : GuardedContract .
+    vars S S' S'' S''' P P' : Configuration .
+    vars d d' : AnonDeposit .
+    vars x y x' y' x'' y'' z : Name .
+    vars x^ y^ : Set{Name} .
+    vars A B : Participant .
+    vars A^ B^ : Set{Participant} .
+    vars v v' : Value .
+    var v^ : List{Value} .
+    var auth : AuthAction .
+    var s : Secret .
+    var sL : Set{Secret} .
+    var n n' t N : Nat .
+    var dL : Set{Name} .
+    var acc : Set{Name} .
+    var e : SplitEntry .
+    var sel : List{SplitEntry} .
+    var cp : ContractPrecondition .
+    var advC : AdvContract .
+    var p : Predicate .
+    var str : String .
+    var a : Secret .
+    var a^ : Set{Secret} .
+    var tail : List{SplitEntry} .
+    vars n^ N^ : List{Nat<} .
+    var accConf : Configuration .    
+
+    ***
+    *** Given a configuration, collect all names.
+    *** Malformed configuration are also taken into account, e.g. put whose names are not deposits in S.
+    ***
+    *** @param
+    ***     a Configuration
+    *** @return
+    ***     a Set{Name} of all names in S, i.e. deposits names and contract names.
+    ***
+        op names in _ : Configuration -> Set{Name} [memo] .
+        op $names in _ : Contract -> Set{Name} [memo] .
+        op $names in _ : ContractPrecondition -> Set{Name} [memo] .
+        op $names in _ : AuthAction -> Set{Name} [memo] .
+        *** Configurations
+        eq names in ({cp}C | S) = ($names in cp), ($names in C), (names in S) .                                 *** [conf.contract-advertised]
+        eq names in (< C , v > y | S) = y, ($names in C), (names in S) .                                        *** [conf.active-contract]
+        eq names in (< A , v > y | S) = y, (names in S) .                                                       *** [conf.deposit]
+        eq names in (A[auth] | S) = $names in auth, (names in S) .                                              *** [conf.authorization]
+        *** Contract 
+        eq $names in (put dL reveal sL if p . C + C') = dL, ($names in C), ($names in C') .                     *** [contr.put-reveal]
+        eq $names in (A : D + C') = $names in D, ($names in C') .                                               *** [contr.authorization]
+        eq $names in (after t : D + C') = $names in D, ($names in C') .                                         *** [contr.after]
+        eq $names in (split( nil ) + C') = ($names in C') .                                                     *** [contr.split]
+        eq $names in (split( (v ~> C) sel ) + C') = ($names in C), ($names in (split(sel))), ($names in C') .   *** [contr.split]
+        *** Contract Preconditions
+        eq $names in (A ? v @ y | cp) = y, ($names in cp) .                                                     *** [contr-pre.vol-deposit]
+        eq $names in (A ! v @ y | cp) = y, ($names in cp) .                                                     *** [contr-pre.perm-deposit]
+        *** Authorization
+        eq $names in (y |> D) = y, ($names in D) .                                                              *** [auth.take-branch]
+        eq $names in (x |>#) = x .                                                                              *** [auth.destroy]
+        *** default cases
+        eq names in S:Configuration = empty [owise] .
+        eq $names in C:Contract = empty [owise] .
+        eq $names in C:ContractPrecondition = empty [owise] .
+        eq $names in A:AuthAction = empty [owise] .
+
+    ***
+    *** Given a configuration, collect all participants.
+    ***
+    *** @param
+    ***     a Configuration
+    *** @return
+    ***     a Set{Participant} of all participants in S.
+    ***
+        op participants in _ : Configuration -> Set{Participant} [memo] .
+        op $participants in _ : Contract -> Set{Participant} [memo] .
+        op $participants in _ : ContractPrecondition -> Set{Participant} [memo] .
+        op $participants in _ : AuthAction -> Set{Participant} [memo] .
+        *** Configurations
+        eq participants in ({cp}C | S) = ($participants in cp), ($participants in C), (participants in S) .     *** [conf.contract-advertised]
+        eq participants in (< C , v > y | S) = ($participants in C), (participants in S) .                      *** [conf.active-contract]
+        eq participants in (< A , v > y | S) = A, (participants in S) .                                         *** [conf.deposit]
+        eq participants in (A[auth] | S) = A, $participants in auth, (participants in S) .                      *** [conf.authorization]
+        eq participants in ({ A : a # N } | S) = A, (participants in S) .                                       *** [conf.committed-secret]
+        eq participants in ( A : a # N | S) = A, (participants in S) .                                          *** [conf.revealed-secret]
+        *** Contract 
+        eq $participants in (put dL reveal sL if p . C + C') = ($participants in C), ($participants in C') .                                *** [contr.put-reveal]    
+        eq $participants in (withdraw A + C) = A, ($participants in C) .                                                                    *** [contr.withdraw]
+        eq $participants in (A : D + C') = A, $participants in D, ($participants in C') .                                                   *** [contr.authorization]
+        eq $participants in (after t : D + C') = $participants in D, ($participants in C') .                                                *** [contr.after]
+        eq $participants in (split( nil ) + C') = ($participants in C') .                                                                   *** [contr.split]
+        eq $participants in (split( (v ~> C) sel ) + C') = ($participants in C), ($participants in (split(sel))), ($participants in C') .   *** [contr.split]
+        *** Contract Preconditions
+        eq $participants in (A ? v @ y | cp) = A, ($participants in cp) .                                       *** [contr-pre.vol-deposit]
+        eq $participants in (A ! v @ y | cp) = A, ($participants in cp) .                                       *** [contr-pre.perm-deposit]
+        eq $participants in (A secret a | cp) = A, ($participants in cp) .                                      *** [contr-pre.commit-secret]
+        *** Authorization
+        eq $participants in (y |> D) = ($participants in D) .                                                   *** [auth.take-branch]
+        *** default cases
+        eq participants in S:Configuration = empty [owise] .
+        eq $participants in C:Contract = empty [owise] .
+        eq $participants in C:ContractPrecondition = empty [owise] .
+        eq $participants in A:AuthAction = empty [owise] .
+ 
+    ***
+    *** Return a set of fresh names
+    ***
+    *** @param
+    ***     a Set{Name} of names that must not be included in the result
+    *** @param
+    ***     (optional, default = 1)
+    ***     a Nat, the size of the result
+    *** @return
+    ***     a Set{Name} of fresh names
+    ***
+        op fresh(_) : Set{Name} -> Set{Name} [memo] .
+        op fresh(_,_) : Set{Name} Nat -> Set{Name} [memo] .    
+        op $fresh(_,_,_,_) : Set{Name} Nat Nat Set{Name} -> Set{Name} [memo] .
+    
+        eq fresh(x^) = fresh(x^,1) .
+        eq fresh(x^,n) = $fresh(x^,n,0,empty) .
+        *** generic implementation
+        ceq $fresh(x^,n,n',y^) =
+            if n <= 0
+            then y^
+            else if  x in x^        
+                 then $fresh(x^,n,(n' + 1),y^)
+                 else $fresh(x^,(n + -1),(n' + 1),(y^, x))
+                 fi 
+            fi 
+        if x := qid("x" + $str(n')).
+    
+    ***
+    *** convert a Nat to a String (use CONVERSION module)
+    ***
+        op $str(_) : Nat -> String [memo] .
+        eq $str(n) = string(n, 10) .
+    
+    
+    ***
+    *** Take a list of split entries and names to create a configuration of parallel contracts
+    *** es. 
+    ***     || (v ~> C v' ~> C' v'' ~> C'' ) (x x' x'') == <C,v> x | <C',v'> x' | <C'',v''> x''
+    ***
+        op ||__ : List{SplitEntry} Set{Name} -> Configuration [memo] .
+        eq || (v ~> C nil) (x, empty) = < C, v > x .
+        ceq || (v ~> C tail) (x, x^) = < C, v > x | ||(tail)(x^) if size(tail) == | x^ | .
+    
+    *** Sum for values
+        op _+_ : Value Value -> Value [memo] .
+        eq n BTC + n' BTC = (n + n') BTC .
+    
+    ***
+    *** Return the total amount value of a list of split entries
+    ***
+        op value(_) : List{SplitEntry} -> Value [memo] .
+        op $value(_,_) : List{SplitEntry} Nat -> Value [memo] .
+        eq value(sel) = $value(sel,0) .
+        eq $value((nil).List{SplitEntry},n) = n BTC .
+        eq $value(n BTC ~> C tail,n') = $value(tail, n + n') .
+    
+    ***
+    *** Return the total amount value of a Configuration, given a set of Participants
+    ***
+        op value of _ in _ : Participant Configuration -> Value [memo] .
+        op $value(_,_,_) : Participant Configuration Nat -> Value [memo] .
+        eq value of A in S = $value(A,S,0) .
+        eq $value(A,< A, n BTC > x | S, n') = $value(A,S, n + n') .
+        eq $value(A,S, n) = n BTC [owise].
+
+    ***
+    *** Option
+    ***     None
+    ***     Some(Any)
+    ***
+    sort Option None Some .
+    subsorts None Some < Option .
+    op None : -> None [ctor] .
+    op Some_ : Universal -> Some [ctor poly(1)] .
+
+
+    ***
+    *** Try
+    ***     Success(Any)
+    ***     Failure(String)
+    ***
+    sort Try Success Failure .
+    subsorts Success Failure < Try .
+    op Success : Universal -> Success [ctor poly(1)] .
+    op Failure : String -> Failure [ctor] .
+
+    ***
+    *** Given a list of names x^ and S, split the deposits from S.
+    *** Return a Some(D R) with D == all deposits in S and R == S \ D,
+    *** or None if some deposit is not found.
+    ***
+        op deposits__ : Set{Name} Configuration -> Option [memo] .
+        eq deposits x^ S = depositsTR x^ S 0 .
+        op depositsTR___ : Set{Name} Configuration Configuration -> Option [memo] .
+        eq depositsTR empty S accConf = Some (accConf S) .    *** base case
+        eq depositsTR (x, x^) ((< A , v > x) | S) accConf = depositsTR x^ S (accConf | < A , v > x) .
+        eq depositsTR x^ S accConf = None [owise].
+
+    ***
+    *** Given a list of secrets a^ and S, fetch all the secrets in S.
+    *** Return a Some(S') with S' == all secrets in S,
+    *** or None if some secret is not found.
+    ***
+        op secrets__ : Set{Secret} Configuration -> Option [memo] .
+        eq secrets a^ S = $secrets a^ S 0 .
+        op $secrets___ : Set{Secret} Configuration Configuration -> Option [memo] .
+        eq $secrets empty S accConf = Some accConf .    *** base case
+        eq $secrets (a, a^) ((A : a # N) | S) accConf = $secrets a^ S (accConf | A : a # N) .
+        eq $secrets a^ S accConf = None [owise].
+
+
+    ***
+    *** Given a set of participants A^ and a guarded contract D,
+    *** search for all A [ y |> D ] within a configuration S.
+    *** Return a Some(S' R) with S' == all the authorization A [ y |> D ] and R == S \ S'
+    *** or None if some authorization is not found.
+    ***
+        op searchAuth____ : Set{Participant} GuardedContract Name Configuration -> Option [memo] .
+        eq searchAuth A^ D y S = $searchAuth A^ D y S 0 .
+        op $searchAuth_____ : Set{Participant} GuardedContract Name Configuration Configuration -> Option [memo] .
+        eq $searchAuth empty D y S accConf = Some (accConf S) .    *** base case
+        eq $searchAuth (A, A^) D y (A [ y |> D ] | S) accConf = $searchAuth A^ D y S (accConf | A [ y |> D ]) .
+        eq $searchAuth A^ D y S accConf = None [owise] .
+
+    ***
+    *** Given a participant A and a deposit name,
+    *** search for destroy authorization A [ x |># ] within a configuration S.
+    *** Return a Some(S' R) with S' == the authorization A [ x |># ] and R == S \ S'
+    *** or None if the authorization is not found.
+    ***
+        op searchAuthDestroy___ : Participant Name Configuration -> Option [memo] .
+        eq searchAuthDestroy A x (A [ x |># ] | S) = Some ((A [ x |># ]) S) .
+        eq searchAuthDestroy A x S = None [owise] .
+
+    ***
+    *** Return a ordered set of absolute times
+    ***
+        op ticks : Configuration -> List{Nat<} [memo] .
+        eq ticks(S) = ticks(S, names in S) .
+    
+        op ticks : Configuration Set{Name} -> List{Nat<} [memo] .
+        eq ticks(S, x^) = makeList($ticks(S, x^, empty)) .
+        *** tail-recursion on Configuration
+        op $ticks : Configuration Set{Name} Set{Nat<} -> Set{Nat<} [memo] .
+        eq $ticks(< C, v > x, x^, n^) = if x in x^ then $ticks(C, n^) else n^ fi .
+        ceq $ticks(S | S', x^, n^) = $ticks(S, x^, n^), $ticks(S', x^, n^) if S =/= 0 /\ S' =/= 0 .
+        eq $ticks(S, x^, n^) = n^ [owise] .
+        *** tail-recursion on Contracts
+        op $ticks : Contract Set{Nat<} -> Set{Nat<} [memo] .
+        eq $ticks(put x^ reveal a^ if p . C, n^) = $ticks(C, n^) .
+        eq $ticks(withdraw A, n^) = n^ .
+        eq $ticks(A^ : D, n^) = $ticks(D, n^) .
+        eq $ticks(after n : D, n^) = $ticks(D, (n, n^)) .
+        eq $ticks(split(nil),n^) = n^ .
+        eq $ticks(split( (v ~> C) sel ), n^) = $ticks(split(sel), n^), $ticks(C, n^) .
+        ceq $ticks(C + C', n^) = $ticks(C, n^), $ticks(C', n^) if C =/= 0 /\ C' =/= 0 .
+        eq $ticks(C, n^) = n^ [owise] .
+endfm
