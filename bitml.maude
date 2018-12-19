@@ -2,6 +2,7 @@
 load bitml-syntax.maude
 load bitml-aux.maude
 
+set print attribute on .    *** enable print attribute (see equation with Failure("..."))
 
 fmod BITML-PREDICATE-SAT is
     protecting BITML-SYNTAX .
@@ -48,8 +49,8 @@ fmod BITML-PREDICATE-SAT is
     ceq $eval E + E' [ S ] = Success(n + m) if Success(n) := $eval E [ S ] /\ Success(m) := $eval E' [ S ] .
     ceq $eval E - E' [ S ] = Success(n + - m) if Success(n) := $eval E [ S ] /\ Success(m) := $eval E' [ S ] .
 
-    eq $eval P [ S ] = Failure("Unable to evaluate the predicate") [owise] .
-    eq $eval E [ S ] = Failure("Unable to evaluate the expression") [owise] .
+    eq $eval P [ S ] = Failure("Unable to evaluate the predicate") [owise print "Error evaluating " P " in " S] .
+    eq $eval E [ S ] = Failure("Unable to evaluate the expression") [owise print "Error evaluating " E " in " S] .
 
     ***
     *** Simplifications
