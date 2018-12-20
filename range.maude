@@ -1,0 +1,72 @@
+***
+*** Positive ranges (possibly infinite)
+***
+fmod RANGE is
+    protecting INT .
+
+    sort Range .
+
+    op Inf : -> Int .               *** upper bound
+    op ][ : -> Range .              *** empty range
+
+    op [_;_] : Int Int -> Range [ctor] .
+    op _U_ : Range Range -> Range [comm assoc id: ][ prec 25] .
+    op _∩_ : Range Range -> Range [comm assoc prec 24] .
+    op ~_ : Range -> Range .
+
+    *** Single element range
+    op [_] : Int -> Range .
+    eq [n] = [n ; n] .
+    
+    vars R R' R'' : Range .
+    vars n m x y : Int .
+
+    *** union 
+    ceq [n ; m] U [x ; y] = [n ; y] if m + 1 == x .                             *** consecutive
+    ceq [n ; m] U [x ; y] = [n ; m] if n <= x /\ x <= m /\ n <= y /\ y <= m .   *** included
+    ceq [n ; m] U [x ; y] = [n ; y] if n <= x /\ x <= m /\ y >= m .             *** insersected
+
+    *** intersection (complete operation)
+    eq R ∩ ][ = ][ .
+    ceq ([n ; m] U R) ∩ ([x ; y] U R') = [x ; y] U (R ∩ [x ; y]) U ([n ; m] ∩ R') U (R ∩ R')
+        if n <= x /\ x <= m /\ n <= y /\ y <= m .               *** included
+    ceq ([n ; m] U R) ∩ ([x ; y] U R') = [x ; m] U (R ∩ [x ; y]) U ([n ; m] ∩ R') U (R ∩ R')
+        if n <= x /\ x <= m /\ y >= m .                         *** insersected
+    ceq ([n ; m] U R) ∩ ([x ; y] U R') = (R ∩ [x ; y]) U ([n ; m] ∩ R') U (R ∩ R')
+        if not(n <= x and x <= m) /\ not(n <= y and y <= m) .   *** disjoined
+
+    eq ~ ][ = [0 ; Inf] .
+    eq ~ [0 ; Inf] = ][ .
+    eq ~ [n ; Inf] = [0 ; n - 1] .
+    eq ~ [0 ; n] = [n + 1 ; Inf] .
+    eq ~ [n ; m] = [0 ; n - 1] U [m + 1 ; Inf] .
+    eq ~ (R U R')= ~ R ∩ ~ R' .
+
+    eq n < Inf = true .
+    eq n <= Inf = true .
+    eq n > Inf = false .
+    eq n >= Inf = false .
+    eq n == Inf = false .
+    eq n =/= Inf = true .
+    eq Inf < n = false .
+    eq Inf <= n = false .
+    eq Inf > n = true .
+    eq Inf >= n = true .
+    eq Inf == n = false .
+    eq Inf == Inf = true .
+    eq Inf =/= n = true .
+    eq Inf =/= Inf = false .
+    
+    ceq [n ; m] = ][ if n > m or n < 0 or m < 0 .
+    eq [Inf ; m] = ][ .
+endfm
+
+***(
+	red [0 ; 10] U [5 ; 20] == [0 ; 20] .
+	red [0 ; 10] U [5 ; Inf] == [0 ; Inf] .
+	red [0 ; 10] ∩ [5 ; 20] == [5 ; 10] .
+	red [0 ; 10] ∩ [5 ; Inf] == [5 ; 10] .
+	red ~ [10 ; 20] == [0 ; 9] U [21 ; Inf] .
+	red ~ [0 ; 9] U [21 ; Inf] == [10 ; 20] .
+	red ~ ~ [10 ; 20] == [10 ; 20] .
+)
