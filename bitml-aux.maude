@@ -6,6 +6,7 @@
 fmod BITML-AUX is
     protecting BITML-SYNTAX .
     protecting SORTABLE-LIST-AND-SET{Nat<} .
+    protecting SET{Predicate} .
 
     vars E E' : Expression .
     vars C C' : Contract .
@@ -238,7 +239,30 @@ fmod BITML-AUX is
         eq $secrets in const(n) a^ = a^ .
         eq $secrets in | E | a^ = $secrets in E a^ .
         eq $secrets in (E + E') a^ = ($secrets in | E | a^) , ($secrets in | E' | a^) .
-         
+
+    ***
+    *** Given a configuration, collect all predicates.
+    ***
+    *** @param
+    ***     a Configuration
+    *** @return
+    ***     a Set{Predicate} of all predicates in S.
+    ***
+        op predicates in _ : Configuration -> Set{Predicate} [memo] .
+        op $predicates in _ : Configuration -> Set{Predicate} [memo] .
+        op $predicates in _ : Contract -> Set{Predicate} [memo] .
+        *** Configurations
+        eq predicates in S = ($predicates in S) \ True .
+        eq $predicates in (< C, v > y | S) = ($predicates in C) , (predicates in S) .
+        *** Contract
+        eq $predicates in (put dL reveal sL if p . C + C') = p, ($predicates in C), ($predicates in C') .                         *** [contr.put-reveal]
+        eq $predicates in (A : D + C') = $predicates in D, ($predicates in C') .                                                  *** [contr.authorization]
+        eq $predicates in (after t : D + C') = $predicates in D, ($predicates in C') .                                            *** [contr.after]
+        eq $predicates in (split( nil ) + C') = ($predicates in C') .                                                             *** [contr.split]
+        eq $predicates in (split( (v ~> C) sel ) + C') = ($predicates in C), ($predicates in (split(sel))), ($predicates in C') . *** [contr.split]
+        *** default cases
+        eq $predicates in S:Configuration = empty [owise] .
+        eq $predicates in S:Contract = empty [owise] .
 
     ***
     *** Given a set of participants A^ and a guarded contract D,

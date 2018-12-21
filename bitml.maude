@@ -153,13 +153,16 @@ mod BITML-SEM is
     
     op [_|_|_U_|_] : Nat List{Nat<} Set{Name} Set{Name} Set{Participant} -> Context [ctor frozen] .
     ops Adv Someone : -> Participant .
-    
+
     op __ : Context Configuration -> SemConfiguration [ctor frozen] .
 
     op {_}_ : Label SemConfiguration -> LSemConfiguration [ctor frozen] .
     
     op toSemConf_ : Configuration -> SemConfiguration [prec 50] .
     eq toSemConf S = [ 0 | ticks(S) | (names in S) U empty | (participants in S) ] S .
+
+    op toConf_ : SemConfiguration -> Configuration [prec 50] .
+    eq toConf C:Context S = S .
 
     *** Labels
     sort Label .
@@ -509,7 +512,7 @@ mod Examples-LIQUIDITY is
     eq t = 10 .
     eq t' = 15 .
 ***    eq N = 1 .
-    eq M = 1 .
+***    eq M = 1 .
 
     *** lottery
     
