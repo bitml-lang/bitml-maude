@@ -8,6 +8,8 @@ fmod RANGE is
 
     op Inf : -> Int .               *** upper bound
     op ][ : -> Range .              *** empty range
+    op all : -> Range .
+    eq all = [0 ; Inf] .
 
     op [_;_] : Int Int -> Range [ctor] .
     op _U_ : Range Range -> Range [comm assoc id: ][ prec 25] .
@@ -28,6 +30,7 @@ fmod RANGE is
 
     *** intersection (complete operation)
     eq R ∩ ][ = ][ .
+    eq R ∩ [0 ; Inf] = R .
     ceq ([n ; m] U R) ∩ ([x ; y] U R') = [x ; y] U (R ∩ [x ; y]) U ([n ; m] ∩ R') U (R ∩ R')
         if n <= x /\ x <= m /\ n <= y /\ y <= m .               *** included
     ceq ([n ; m] U R) ∩ ([x ; y] U R') = [x ; m] U (R ∩ [x ; y]) U ([n ; m] ∩ R') U (R ∩ R')
@@ -35,7 +38,9 @@ fmod RANGE is
     ceq ([n ; m] U R) ∩ ([x ; y] U R') = (R ∩ [x ; y]) U ([n ; m] ∩ R') U (R ∩ R')
         if not(n <= x and x <= m) /\ not(n <= y and y <= m) .   *** disjoined
 
-    eq ~ ][ = [0 ; Inf] .
+    eq R ∩ (R U R') = R . 
+
+    eq ~ ][ = all .
     eq ~ [0 ; Inf] = ][ .
     eq ~ [n ; Inf] = [0 ; n - 1] .
     eq ~ [0 ; n] = [n + 1 ; Inf] .

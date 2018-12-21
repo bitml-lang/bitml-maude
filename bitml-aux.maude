@@ -7,6 +7,7 @@ fmod BITML-AUX is
     protecting BITML-SYNTAX .
     protecting SORTABLE-LIST-AND-SET{Nat<} .
 
+    vars E E' : Expression .
     vars C C' : Contract .
     vars D D' : GuardedContract .
     vars S S' S'' S''' P P' : Configuration .
@@ -27,7 +28,7 @@ fmod BITML-AUX is
     var sel : List{SplitEntry} .
     var cp : ContractPrecondition .
     var advC : AdvContract .
-    var p : Predicate .
+    var p p' : Predicate .
     var str : String .
     var a : Secret .
     var a^ : Set{Secret} .
@@ -220,6 +221,24 @@ fmod BITML-AUX is
         eq $secrets (a, a^) ((A : a # N) | S) accConf = $secrets a^ S (accConf | A : a # N) .
         eq $secrets a^ S accConf = None [owise].
 
+    ***
+    *** Given a predicate P, collect all the secrets in P.
+    ***
+        op secrets in _ : Predicate  -> Set{Secret} [memo] .
+        eq secrets in p = $secrets in p empty .
+        op $secrets in _ _ : Predicate Set{Secret} -> Set{Secret} [memo] .
+	    eq $secrets in True a^  = a^ .
+        eq $secrets in False a^  = a^ .
+	    eq $secrets in (p && p') a^ = ($secrets in p a^) , ($secrets in p' a^) .
+	    eq $secrets in (! p) a^ =  $secrets in p a^ .
+	    eq $secrets in (E < E') a^ = ($secrets in E a^) , ($secrets in E' a^) .
+	    eq $secrets in (E == E') a^ = ($secrets in E a^) , ($secrets in E' a^) .     
+        op $secrets in _ _ : Expression Set{Secret} -> Set{Secret} [memo] .
+        eq $secrets in ref(a) a^ = a , a^ .
+        eq $secrets in const(n) a^ = a^ .
+        eq $secrets in | E | a^ = $secrets in E a^ .
+        eq $secrets in (E + E') a^ = ($secrets in | E | a^) , ($secrets in | E' | a^) .
+         
 
     ***
     *** Given a set of participants A^ and a guarded contract D,
