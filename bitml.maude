@@ -61,7 +61,8 @@ fmod BITML-PREDICATE-SAT is
     eq const(n) + const(m) = const(n + m) .
     eq const(n) < const(m) = toExp  n < m .
     eq const(n) == const(m) = toExp n == m .
-    eq | const(n) | = const( rat( ceiling( (log(float(n))) / (log(float(2))) / 7.0 ) ) ) .
+    eq | const(0) | = const(0) .
+    eq | const(n) | = const( rat( ceiling( (log(float(n) + 1.0)) / (log(float(2))) / 7.0 ) ) ) .
     eq | ref(a) | < const(0) = False .
     eq | ref(a) | >= const(0) = True .
     ceq E > const(m) && E > const(n) = E > const(m) if m > n .
@@ -85,7 +86,7 @@ fmod BITML-PREDICATE-SAT is
     op $eval_[_] : Expression Configuration -> Try .
     eq $eval const(n) [ S ] = Success(n) .
     eq $eval | ref(a) | [ (A : a # N) | S ] = Success(N) .
-    ceq $eval | E | [ S ] = Success(rat( ceiling( (log(float(n))) / (log(float(2))) / 7.0 ) ) ) if Success(n) := $eval E [ S ] .
+    ceq $eval | E | [ S ] = Success(m) if Success(n) := $eval E [ S ] /\ const(m) := | const(n) | .
     ceq $eval E + E' [ S ] = Success(n + m) if Success(n) := $eval E [ S ] /\ Success(m) := $eval E' [ S ] .
 
     eq $eval P [ S ] = Failure("Unable to evaluate the predicate") [owise print "Error evaluating " P " in " S] .
@@ -106,7 +107,7 @@ fmod BITML-PREDICATE-SAT is
 
     op range__ : Secret Predicate -> Range .
     eq range a True = all .
-    eq range a False = all .
+    eq range a False = ][  .
     ceq range a (p && p') = (range a p) ∩ (range a p') if a in (secrets in p) and a in (secrets in p').
     ceq range a (p && p') = (range a p) if a in (secrets in p) .
     ceq range a (p && p') = (range a p') if a in (secrets in p') .
