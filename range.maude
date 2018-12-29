@@ -11,10 +11,10 @@ fmod RANGE is
     op all : -> Range .
     eq all = [0 ; Inf] .
 
-    op [_;_] : Int Int -> Range [ctor] .
-    op _U_ : Range Range -> Range [comm assoc id: ][ prec 25] .
-    op _∩_ : Range Range -> Range [comm assoc prec 24] .
-    op ~_ : Range -> Range .
+    op [_;_] : Int Int -> Range [ctor prec 21] .
+    op _U_ : Range Range -> Range [comm assoc id: ][ prec 24] .
+    op _∩_ : Range Range -> Range [comm assoc prec 23] .
+    op ~_ : Range -> Range [prec 22] .
 
     *** Single element range
     op [_] : Int -> Range .
@@ -66,7 +66,16 @@ fmod RANGE is
     eq [Inf ; m] = ][ .
 endfm
 
+view Range from TRIV to RANGE is
+    sort Elt to Range .
+endv
+
+
 ***(
+	fmod RANGE-LIST is
+	    pr RANGE .
+	    pr SET{Range} .
+	endfm
 	red [0 ; 10] U [5 ; 20] == [0 ; 20] .
 	red [0 ; 10] U [5 ; Inf] == [0 ; Inf] .
 	red [0 ; 10] ∩ [5 ; 20] == [5 ; 10] .
