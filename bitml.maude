@@ -273,7 +273,7 @@ mod BITML-SEM is
                         [t | t^ | icn U cn | Part] < D, v > y | S''' => {l'} [t | t^ | icn U cn' | Part] S' /\    *** D progresses
                         Some y == cv(l') .                                              *** withdraw/split/put-reveal
 
-    crl [Delay] : [t | t^ | icn U cn | Part] S => {delta (t' + - t)} [t' | t'^ | icn U cn | Part] S 
+    crl [Delay] : [t | t^ | icn U cn | Part] S => {delta (sd(t',t))} [t' | t'^ | icn U cn | Part] S 
                     if t^ =/= nil /\ t' := head(t^) /\ t'^ := tail(t^) .
 
 endm

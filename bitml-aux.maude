@@ -134,7 +134,7 @@ fmod BITML-AUX is
             then y^
             else if  x in x^        
                  then $fresh(x^,n,(n' + 1),y^)
-                 else $fresh(x^,(n + -1),(n' + 1),(y^, x))
+                 else $fresh(x^,sd(n,1),(n' + 1),(y^, x))
                  fi 
             fi 
         if x := qid("x" + $str(n')).
