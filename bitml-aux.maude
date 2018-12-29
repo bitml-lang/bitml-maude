@@ -34,7 +34,7 @@ fmod BITML-AUX is
     var a : Secret .
     var a^ : Set{Secret} .
     var tail : List{SplitEntry} .
-    vars n^ N^ : List{Nat<} .
+    vars n^ : Set{Nat<} .
     var accConf : Configuration .    
 
     ***
