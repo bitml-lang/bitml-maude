@@ -161,15 +161,15 @@ fmod BITML-SYNTAX-CONS is
     ***
     op True : -> True [ctor] .
     op False : -> False [ctor] .
-    op _&&_ : Predicate Predicate -> And [ctor prec 24 frozen comm] .
+    op _&&_ : Predicate Predicate -> And [ctor prec 24 frozen comm assoc] .
     op !_ : Predicate -> Not [ctor prec 23 frozen] .
     op _<_ : Expression Expression -> LT [ctor prec 22 frozen] .
     op _==_ : Expression Expression -> EQ [ctor prec 22 frozen comm] .
 
-    op _+_ : Expression Expression -> Sum [ctor prec 21 frozen comm] .
-    op |_| : Expression -> Size [ctor prec 21 frozen] .
-    op ref(_) : Secret -> SecretReference [ctor prec 21 frozen] .
-    op const(_) : Int -> Constant [ctor prec 21 frozen] .
+    op _+_ : Expression Expression -> Sum [ctor prec 21 frozen comm assoc] .
+    op |_| : Expression -> Size [ctor prec 20 frozen] .
+    op ref(_) : Secret -> SecretReference [ctor prec 20 frozen] .
+    op const(_) : Int -> Constant [ctor prec 20 frozen] .
 
     ***
     *** Contract 
