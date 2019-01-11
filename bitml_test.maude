@@ -1,3 +1,6 @@
+***
+*** Depends on full-maude, that is not supported by maude+strat alpha version
+***
 
 load /usr/share/maude/full-maude.maude
 load /home/nicola/repositories/bitml-maude/bitml.maude
