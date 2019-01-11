@@ -25,3 +25,26 @@ Maude>
 Note the version number `alpha120+strat`.
 
 
+## Structure
+
+Modules tagged as `(internal)` are meant to be used only within the same file, not outside. Their name may change.
+Modules tagged as `(external)` are meant to be imported by other modules in other files. Their name should never change.
+
+`bitml-syntax.maude`: defines the bitml syntax.
+
+  Defines modules
+  
+  - `BITML-SORTS (internal)`
+  - `BITML-SYNTAX-CONS (internal)`
+  - `BITML-STREQ (internal)`
+  - `BITML-SYNTAX (external)`
+
+`bitml-aux.maude`: defines some auxiliary operations.
+  
+  Depends on `bitml-syntax.maude` and defines the module
+  
+  - `BITML-AUX (external)`
+  
+  
+
+
