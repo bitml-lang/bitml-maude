@@ -40,13 +40,6 @@ fmod BITML-SORTS is
     *** Predicate
     ***
     sort Predicate .        *** p
-    sort True .             *** true
-    sort False .            *** false
-    sort And .              *** p && p
-    sort Not .              *** ! p
-    sort LT .               *** E < E
-    sort EQ .               *** E == E
-    subsorts True False And Not LT EQ < Predicate .
 
     ***
     *** Expression
@@ -159,12 +152,12 @@ fmod BITML-SYNTAX-CONS is
     ***
     *** Predicates/Expressions
     ***
-    op True : -> True [ctor] .
-    op False : -> False [ctor] .
-    op _&&_ : Predicate Predicate -> And [ctor prec 24 frozen comm assoc] .
-    op !_ : Predicate -> Not [ctor prec 23 frozen] .
-    op _<_ : Expression Expression -> LT [ctor prec 22 frozen] .
-    op _==_ : Expression Expression -> EQ [ctor prec 22 frozen comm] .
+    op True : -> Predicate [ctor] .                                                 *** true
+    op False : -> Predicate [ctor] .                                                *** false                                                
+    op _&&_ : Predicate Predicate -> Predicate [ctor prec 24 frozen comm assoc] .   *** p & p'
+    op !_ : Predicate -> Predicate [ctor prec 23 frozen] .                          *** ! p
+    op _<_ : Expression Expression -> Predicate [ctor prec 22 frozen] .             *** E < E'
+    op _==_ : Expression Expression -> Predicate [ctor prec 22 frozen comm] .       *** E == E'
 
     op _+_ : Expression Expression -> Sum [ctor prec 21 frozen comm assoc] .
     op |_| : Expression -> Size [ctor prec 20 frozen] .
@@ -215,16 +208,21 @@ endfm
 ***
 fmod BITML-STREQ is
     protecting BITML-SYNTAX-CONS .
-    
+
     var x^ : Set{Name} .
     var a^ : Set{Secret} .
     var C : Contract .
     var p : Predicate .
-    vars A : Participant .
-    vars A^ : Set{Participant} .
+    var A : Participant .
+    var A^ : Set{Participant} .
     var D : GuardedContract .
     vars t t' : Nat .
+    vars E E' E'' : Expression .
+    vars P P' : Predicate .
 
+    ***
+    *** Syntactic sugar of PutReveal
+    ***
     op tau ._ : Contract -> PutReveal [prec 25 frozen] .
     op put_._ : Set{Name} Contract -> PutReveal [prec 25 frozen] .
     op put_if_._ : Set{Name} Predicate Contract -> PutReveal [prec 25 frozen] .
@@ -246,6 +244,28 @@ fmod BITML-STREQ is
     eq after 0 : D = D .
     eq after t : after t' : D = after max(t,t') : D .
     eq after t : A : D = A : after t : D .
+
+    ***
+    *** Extra operations for Predicates
+    ***
+    op _||_ : Predicate Predicate -> Predicate [prec 25 comm] .
+    op _<=_ : Expression Expression -> Predicate [prec 22] .
+    op _>_ : Expression Expression -> Predicate [prec 22] .
+    op _>=_ : Expression Expression -> Predicate [prec 22] .
+    op _!=_ : Expression Expression -> Predicate [prec 22 comm] .
+    op _<=_<=_ : Expression Expression Expression -> Predicate [prec 22] .
+    op _<_<_ : Expression Expression Expression -> Predicate [prec 22] .
+    op _<=_<_ : Expression Expression Expression -> Predicate [prec 22] .
+    op _<_<=_ : Expression Expression Expression -> Predicate [prec 22] .
+    eq P || P' = !(! P && ! P') .
+    eq E <= E' = E < E' || E == E' .
+    eq E > E' = !(E <= E') .
+    eq E >= E' = !(E < E') .
+    eq E != E' = !(E == E') .
+    eq E <= E' <= E'' = E <= E' && E' <= E'' .
+    eq E < E' < E'' = E < E' && E' < E'' .
+    eq E <= E' < E'' = E <= E' && E' < E'' .
+    eq E < E' <= E'' = E < E' && E' <= E'' .
 endfm
 
 fmod BITML-SYNTAX is

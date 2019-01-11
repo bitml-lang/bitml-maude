@@ -21,28 +21,6 @@ fmod BITML-PREDICATE-SAT is
     vars R R' : Range .
 
     ***
-    *** Extra operations
-    ***
-    op _||_ : Predicate Predicate -> Predicate [prec 25 comm] .
-    op _<=_ : Expression Expression -> Predicate [prec 22] .
-    op _>_ : Expression Expression -> Predicate [prec 22] .
-    op _>=_ : Expression Expression -> Predicate [prec 22] .
-    op _!=_ : Expression Expression -> Predicate [prec 22 comm] .
-    op _<=_<=_ : Expression Expression Expression -> Predicate [prec 22] .
-    op _<_<_ : Expression Expression Expression -> Predicate [prec 22] .
-    op _<=_<_ : Expression Expression Expression -> Predicate [prec 22] .
-    op _<_<=_ : Expression Expression Expression -> Predicate [prec 22] .
-    eq P || P' = !(! P && ! P') .
-    eq E <= E' = E < E' || E == E' .
-    eq E > E' = !(E <= E') .
-    eq E >= E' = !(E < E') .
-    eq E != E' = !(E == E') .
-    eq E <= E' <= E'' = E <= E' && E' <= E'' .
-    eq E < E' < E'' = E < E' && E' < E'' .
-    eq E <= E' < E'' = E <= E' && E' < E'' .
-    eq E < E' <= E'' = E < E' && E' <= E'' .
-
-    ***
     *** Simplifications
     ***
     eq ! ! P = P .
