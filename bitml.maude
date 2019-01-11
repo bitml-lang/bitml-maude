@@ -3,8 +3,6 @@ load bitml-syntax.maude
 load bitml-aux.maude
 load bitml-predicate.maude
 
-set print attribute on .    *** enable print attribute (see equation with Failure("..."))
-
 mod BITML-SEM is
     extending BITML-SYNTAX .
     protecting BITML-AUX .

@@ -1,6 +1,9 @@
 ***
 *** Given a Configuration, check if it satisfies a Predicate
 ***
+
+set print attribute on .    *** enable print attribute (see equation with Failure("..."))
+
 fmod BITML-PREDICATE-SAT is
     protecting BITML-SYNTAX .
     protecting BITML-AUX .
