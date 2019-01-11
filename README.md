@@ -30,21 +30,35 @@ Note the version number `alpha120+strat`.
 Modules tagged as `(internal)` are meant to be used only within the same file, not outside. Their name may change.
 Modules tagged as `(external)` are meant to be imported by other modules in other files. Their name should never change.
 
-`bitml-syntax.maude`: defines the bitml syntax.
-
-  Defines modules
+### `bitml-syntax.maude`
+Define the bitml syntax.
   
   - `BITML-SORTS (internal)`
   - `BITML-SYNTAX-CONS (internal)`
   - `BITML-STREQ (internal)`
   - `BITML-SYNTAX (external)`
 
-`bitml-aux.maude`: defines some auxiliary operations.
-  
-  Depends on `bitml-syntax.maude` and defines the module
-  
+### `bitml-aux.maude`
+Define some auxiliary operations.
+Depend on `bitml-syntax.maude` and define the module:
+
   - `BITML-AUX (external)`
-  
-  
+
+### `bitml-predicate.maude`
+Define predicates evaluation.
+Depend on `bitml-aux.maude` and define the module:
+
+  - `BITML-PREDICATE-SAT (external)`
+
+### `bitml.maude`
+Define the abstract semantic of bitml and the rewriting strategy.
+Depend on `bitml-predicate.maude` and define the modules:
+
+  - `BITML-SEM (internal)`
+  - `BITML (external)`
+  - `BITML-STRAT (internal)`
+  - `BITML-PREDS (internal)`
+  - `BITML-CHECK (external)`
+
 
 
