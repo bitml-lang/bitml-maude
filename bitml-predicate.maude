@@ -1,8 +1,4 @@
 
-load bitml-syntax.maude
-load bitml-aux.maude
-load range.maude
-
 fmod BITML-PREDICATE-SAT is
     protecting BITML-SYNTAX .
     protecting BITML-AUX .
