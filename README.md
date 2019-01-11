@@ -61,4 +61,88 @@ Depend on `bitml-predicate.maude` and define the modules:
   - `BITML-CHECK (external)`
 
 
+## Example
+Start maude `./maude model-checker.maude /<path>/bitml.maude` and type the following example:
+
+```
+mod Examples-LIQUIDITY is
+    protecting BITML .
+
+    ops A B C : -> Participant .
+    op v : -> Value .
+    ops a b : -> Secret .
+    ops t t' N M : -> Nat .
+    op LOTTERY : -> SemConfiguration .
+    op LIQUID-LOTTERY : -> SemConfiguration .
+    op S : Contract -> SemConfiguration .
+    ops WIN WIN' : -> Contract .
+
+    eq t = 10 .
+    eq t' = 15 .
+    eq N = 1 .
+    eq M = 1 .
+
+    *** lottery
+    
+    eq LOTTERY = S(WIN) .
+    eq LIQUID-LOTTERY = S(WIN') .
+    
+    eq S(WIN:Contract) = 
+        toSemConf
+        < split(
+            2 BTC ~> ( reveal b if const(0) <= | ref(b) | <= const(1) . withdraw B + after t : withdraw A )
+            2 BTC ~> ( reveal a . withdraw A + after t : withdraw B )
+            2 BTC ~> WIN:Contract
+            ), 6 BTC > 'x
+        | { A : a # N } 
+        | { B : b # M } .
+
+    eq WIN = reveal (a, b) if | ref(a) | == | ref(b) | . withdraw A
+           + reveal (a, b) if | ref(a) | != | ref(b) | . withdraw B .
+
+    eq WIN' = WIN
+            + (after t' : reveal a . withdraw A)
+            + (after t' : reveal b . withdraw B) .
+
+    *** strategies
+
+    *** A never locks her secrets
+    eq strategy(S:SemConfiguration, A lock-reveal a:Secret) = false .
+
+    *** A never locks her authorizations
+    eq strategy(S:SemConfiguration, A lock D:GuardedContract in x:Name) = false .
+
+    *** No one destroys a deposit
+    ***eq strategy(S:SemConfiguration, A:Participant authorize-destroy-of x:Name) = false .
+
+    *** A reveals any secret (default any participant reveals any secret)
+    ***eq strategy(S:SemConfiguration, A reveal a:Secret) = true .
+
+    *** B does not reveal any secret
+    ***eq strategy(S:SemConfiguration, B reveal a:Secret) = false .
+
+    *** No one reveal a secret
+    ***eq strategy(S:SemConfiguration, A:Participant reveal a:Secret) = false .
+
+    *** B authorizes any contract
+    ***eq strategy(S:SemConfiguration, B authorize D:GuardedContract in y:Name) = true .
+
+    *** No one authorize any contract
+    ***eq strategy(S:SemConfiguration, A:Participant authorize D:Contract in y:Name) = false .
+endm
+
+smod Examples-LIQUIDITY-CHECK is
+    protecting BITML-CHECK .
+    including Examples-LIQUIDITY .
+endsm
+```
+
+Model-check liquidity:
+
+```
+reduce in Examples-LIQUIDITY-CHECK : modelCheck(LOTTERY, <> contract-free, 'bitml) .           *** false
+reduce in Examples-LIQUIDITY-CHECK : modelCheck(LIQUID-LOTTERY, <> contract-free, 'bitml) .    *** true
+reduce in Examples-LIQUIDITY-CHECK : modelCheck(LIQUID-LOTTERY, []<> A has-deposit>= 4 BTC, 'bitml) .   *** true
+```
+
 
