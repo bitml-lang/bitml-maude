@@ -64,25 +64,15 @@ fmod BITML-SORTS is
     subsorts PutReveal Withdraw Split AuthC After < GuardedContract < Contract .
     
     ***
-    *** Contract Preconditions
-    ***
-    sort ContractPrecondition .        *** G
-    sort VolDeposit .                  *** A: ?v @x
-    sort PerDeposit .                  *** A: !v @x
-    sort CommSecret .                  *** A: secret a
-    subsorts VolDeposit PerDeposit CommSecret < ContractPrecondition .
-    
-    ***
     *** Configurations
     ***
     sort Configuration .        *** Gamma
-    sort AdvContract .          *** {G}C
     sort ActContract .          *** <C,v>x
     sort Deposit .              *** <A,v>x
     sort Auth .                 *** A[chi] 
     sort ConfSec .              *** {A:a#N}
     sort ConfRev .              *** A:a#N
-    subsorts AdvContract ActContract Deposit Auth ConfSec ConfRev < Configuration .
+    subsorts ActContract Deposit Auth ConfSec ConfRev < Configuration .
 
     ***
     *** Authorization
@@ -176,19 +166,9 @@ fmod BITML-SYNTAX-CONS is
     op _+_ : GuardedContract GuardedContract -> GuardedContract [comm assoc ctor id: 0 frozen format (d d d d)] .   *** [contr.sum]
 
     ***
-    *** Contract Preconditions
-    ***
-    op 0 : -> ContractPrecondition [ctor] .                                                                *** [contr-pre.id]
-    op _?_@_ : Participant Value Name -> VolDeposit [ctor prec 25 frozen] .                                *** [contr-pre.vol-deposit]
-    op _!_@_ : Participant Value Name -> PerDeposit [ctor prec 25 frozen] .                                *** [contr-pre.perm-deposit]
-    op _secret_ : Participant Secret -> CommSecret [ctor prec 25 frozen] .                                 *** [contr-pre.commit-secret]
-    op _|_ : ContractPrecondition ContractPrecondition -> ContractPrecondition [comm assoc id: 0 frozen] . *** [contr-pre.paral]
-
-    ***
     *** Configurations
     ***
     op 0 : -> Configuration [ctor] .                                                                            *** [conf.id]
-    op {_}_ : ContractPrecondition Contract -> AdvContract [ctor prec 35 frozen] .                              *** [conf.contract-advertised]
     op __ : AnonContract Name -> ActContract [ctor prec 15 frozen format (d s d)] .                             *** [conf.active-contract]
     op __ : AnonDeposit Name -> Deposit [ctor prec 15 frozen format (d s d)] .                                  *** [conf.deposit]
     op _[_] : Participant AuthAction -> Auth [ctor prec 35 frozen] .                                            *** [conf.authorization]

@@ -27,8 +27,6 @@ fmod BITML-AUX is
     var acc : Set{Name} .
     var e : SplitEntry .
     var sel : List{SplitEntry} .
-    var cp : ContractPrecondition .
-    var advC : AdvContract .
     var p p' : Predicate .
     var str : String .
     var a : Secret .
@@ -48,10 +46,8 @@ fmod BITML-AUX is
     ***
         op names in _ : Configuration -> Set{Name} [memo] .
         op $names in _ : Contract -> Set{Name} [memo] .
-        op $names in _ : ContractPrecondition -> Set{Name} [memo] .
         op $names in _ : AuthAction -> Set{Name} [memo] .
         *** Configurations
-        eq names in ({cp}C | S) = ($names in cp), ($names in C), (names in S) .                                 *** [conf.contract-advertised]
         eq names in (< C , v > y | S) = y, ($names in C), (names in S) .                                        *** [conf.active-contract]
         eq names in (< A , v > y | S) = y, (names in S) .                                                       *** [conf.deposit]
         eq names in (A[auth] | S) = $names in auth, (names in S) .                                              *** [conf.authorization]
@@ -61,16 +57,12 @@ fmod BITML-AUX is
         eq $names in (after t : D + C') = $names in D, ($names in C') .                                         *** [contr.after]
         eq $names in (split( nil ) + C') = ($names in C') .                                                     *** [contr.split]
         eq $names in (split( (v ~> C) sel ) + C') = ($names in C), ($names in (split(sel))), ($names in C') .   *** [contr.split]
-        *** Contract Preconditions
-        eq $names in (A ? v @ y | cp) = y, ($names in cp) .                                                     *** [contr-pre.vol-deposit]
-        eq $names in (A ! v @ y | cp) = y, ($names in cp) .                                                     *** [contr-pre.perm-deposit]
         *** Authorization
         eq $names in (y |> D) = y, ($names in D) .                                                              *** [auth.take-branch]
         eq $names in (x |>#) = x .                                                                              *** [auth.destroy]
         *** default cases
         eq names in S:Configuration = empty [owise] .
         eq $names in C:Contract = empty [owise] .
-        eq $names in C:ContractPrecondition = empty [owise] .
         eq $names in A:AuthAction = empty [owise] .
 
     ***
@@ -83,10 +75,8 @@ fmod BITML-AUX is
     ***
         op participants in _ : Configuration -> Set{Participant} [memo] .
         op $participants in _ : Contract -> Set{Participant} [memo] .
-        op $participants in _ : ContractPrecondition -> Set{Participant} [memo] .
         op $participants in _ : AuthAction -> Set{Participant} [memo] .
         *** Configurations
-        eq participants in ({cp}C | S) = ($participants in cp), ($participants in C), (participants in S) .     *** [conf.contract-advertised]
         eq participants in (< C , v > y | S) = ($participants in C), (participants in S) .                      *** [conf.active-contract]
         eq participants in (< A , v > y | S) = A, (participants in S) .                                         *** [conf.deposit]
         eq participants in (A[auth] | S) = A, $participants in auth, (participants in S) .                      *** [conf.authorization]
@@ -99,16 +89,11 @@ fmod BITML-AUX is
         eq $participants in (after t : D + C') = $participants in D, ($participants in C') .                                                *** [contr.after]
         eq $participants in (split( nil ) + C') = ($participants in C') .                                                                   *** [contr.split]
         eq $participants in (split( (v ~> C) sel ) + C') = ($participants in C), ($participants in (split(sel))), ($participants in C') .   *** [contr.split]
-        *** Contract Preconditions
-        eq $participants in (A ? v @ y | cp) = A, ($participants in cp) .                                       *** [contr-pre.vol-deposit]
-        eq $participants in (A ! v @ y | cp) = A, ($participants in cp) .                                       *** [contr-pre.perm-deposit]
-        eq $participants in (A secret a | cp) = A, ($participants in cp) .                                      *** [contr-pre.commit-secret]
         *** Authorization
         eq $participants in (y |> D) = ($participants in D) .                                                   *** [auth.take-branch]
         *** default cases
         eq participants in S:Configuration = empty [owise] .
         eq $participants in C:Contract = empty [owise] .
-        eq $participants in C:ContractPrecondition = empty [owise] .
         eq $participants in A:AuthAction = empty [owise] .
  
     ***
