@@ -1,7 +1,6 @@
 
 load bitml-syntax.maude
 load bitml-aux.maude
-load range.maude
 load bitml-predicate.maude
 
 set print attribute on .    *** enable print attribute (see equation with Failure("..."))
