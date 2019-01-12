@@ -4,3 +4,5 @@ index.html
 *.pdf
 
 html/
+.settings
+.project
