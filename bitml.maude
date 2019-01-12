@@ -191,6 +191,7 @@ smod BITML-STRAT is
       | C-AuthRev
       | C-LockAuthRev
       | C-Withdraw
+      | C-LockAuthControl
       | C-AuthControl
       | C-Control1{all\delay}
       | C-Control2{all\delay}
