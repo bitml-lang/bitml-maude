@@ -6,3 +6,6 @@ index.html
 html/
 .settings
 .project
+
+*.sublime-project
+*.sublime-workspace
