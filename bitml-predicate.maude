@@ -40,14 +40,6 @@ fmod BITML-PREDICATE-SAT is
     eq True && P = P .
     eq False && P = False .
 
-
-    ***
-    *** Size definition for natural numbers
-    ***
-    eq | const(0) | = const(0) .
-    eq | const(n) | = const( rat( ceiling( (log(float(n) + 1.0)) / (log(float(2))) / 7.0 ) ) ) .
-
-
     ***
     *** Evaluation of predicates
     ***
@@ -66,8 +58,7 @@ fmod BITML-PREDICATE-SAT is
     ***
     op [_] {_} : Expression Configuration -> Try .
     eq [ const(n) ] { S } = Success(n) .
-    eq [ | ref(a) | ] { (A : a # N) | S } = Success(N) .
-    ceq [ | E | ] { S } = Success(m) if Success(n) := [ E ] { S } /\ const(m) := | const(n) | .
+    eq [ size(a) ] { (A : a # N) | S } = Success(N) .
     ceq [ E + E' ] { S } = Success(n + m) if Success(n) := [ E ] { S } /\ Success(m) := [ E' ] { S } .
 
     eq [ E ] { S } = Failure("Unable to evaluate the expression") [owise print "Error evaluating " E " in " S] .

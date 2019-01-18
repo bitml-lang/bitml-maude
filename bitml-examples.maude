@@ -115,15 +115,15 @@ mod Examples-LIQUIDITY is
     eq S(WIN:Contract) = 
         toSemConf
         < split(
-            2 BTC ~> ( reveal b if const(0) <= | ref(b) | <= const(1) . withdraw B + after t : withdraw A )
+            2 BTC ~> ( reveal b if const(0) <= size(b) <= const(1) . withdraw B + after t : withdraw A )
             2 BTC ~> ( reveal a . withdraw A + after t : withdraw B )
             2 BTC ~> WIN:Contract
             ), 6 BTC > 'x
         | { A : a # N } 
         | { B : b # M } .
 
-    eq WIN = reveal (a, b) if | ref(a) | == | ref(b) | . withdraw A
-           + reveal (a, b) if | ref(a) | != | ref(b) | . withdraw B .
+    eq WIN = reveal (a, b) if size(a) == size(b) . withdraw A
+           + reveal (a, b) if size(a) != size(b) . withdraw B .
 
     eq WIN' = WIN
             + (after t' : reveal a . withdraw A)
@@ -187,11 +187,11 @@ endsm
 
 
 ***(
-	reduce in Examples-LIQUIDITY-CHECK : modelCheck(LOTTERY, <> contract-free, 'bitml) .           *** false
-	reduce in Examples-LIQUIDITY-CHECK : modelCheck(LIQUID-LOTTERY, <> contract-free, 'bitml) .    *** true
-	reduce in Examples-LIQUIDITY-CHECK : modelCheck(LIQUID-LOTTERY, []<> A has-deposit>= 4 BTC, 'bitml) .   *** true
-	
-	reduce in Examples-LIQUIDITY-CHECK : modelCheck(TCconf(TC), <> contract-free, 'bitml) .     *** true
+    reduce in Examples-LIQUIDITY-CHECK : modelCheck(LOTTERY, <> contract-free, 'bitml) .           *** false
+    reduce in Examples-LIQUIDITY-CHECK : modelCheck(LIQUID-LOTTERY, <> contract-free, 'bitml) .    *** true
+    reduce in Examples-LIQUIDITY-CHECK : modelCheck(LIQUID-LOTTERY, []<> A has-deposit>= 4 BTC, 'bitml) .   *** true
+
+    reduce in Examples-LIQUIDITY-CHECK : modelCheck(TCconf(TC), <> contract-free, 'bitml) .     *** true
     reduce in Examples-LIQUIDITY-CHECK : modelCheck(TCconf(TC'), <> contract-free, 'bitml) .    *** false
     reduce in Examples-LIQUIDITY-CHECK : modelCheck(TCconf(TC''), <> contract-free, 'bitml) .   *** true
 )

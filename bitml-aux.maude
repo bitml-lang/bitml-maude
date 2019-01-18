@@ -220,10 +220,9 @@ fmod BITML-AUX is
 	    eq $secrets in (E < E') a^ = ($secrets in E a^) , ($secrets in E' a^) .
 	    eq $secrets in (E == E') a^ = ($secrets in E a^) , ($secrets in E' a^) .     
         op $secrets in _ _ : Expression Set{Secret} -> Set{Secret} [memo] .
-        eq $secrets in ref(a) a^ = a , a^ .
+        eq $secrets in size(a) a^ = a , a^ .
         eq $secrets in const(n) a^ = a^ .
-        eq $secrets in | E | a^ = $secrets in E a^ .
-        eq $secrets in (E + E') a^ = ($secrets in | E | a^) , ($secrets in | E' | a^) .
+        eq $secrets in (E + E') a^ = ($secrets in E a^) , ($secrets in E' a^) .
 
     ***
     *** Given a configuration, collect all predicates.

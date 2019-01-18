@@ -46,10 +46,9 @@ fmod BITML-SORTS is
     ***
     sort Expression .       *** E
     sort Sum .              *** E + E
-    sort Size .             *** |a|
-    sort SecretReference .  *** a
+    sort SecretSize .       *** |a|
     sort Constant .         *** N
-    subsort Sum Size SecretReference Constant < Expression .
+    subsort Sum SecretSize Constant < Expression .
 
     ***
     *** Contract
@@ -150,8 +149,7 @@ fmod BITML-SYNTAX-CONS is
     op _==_ : Expression Expression -> Predicate [ctor prec 22 frozen comm] .       *** E == E'
 
     op _+_ : Expression Expression -> Sum [ctor prec 21 frozen comm assoc] .
-    op |_| : Expression -> Size [ctor prec 20 frozen] .
-    op ref(_) : Secret -> SecretReference [ctor prec 20 frozen] .
+    op size(_) : Secret -> SecretSize [ctor prec 20 frozen] .
     op const(_) : Int -> Constant [ctor prec 20 frozen] .
 
     ***
