@@ -125,7 +125,7 @@ mod BITML-SEM is
                     if  strategy([t | t^ | icn U cn | Part] < (put x^ reveal a^ if p . C) + C', v > y | S, Someone put(x^,a^,y)) /\
                         z := fresh(cn) /\ 
                         Some (S' S'') := (deposits x^ S) /\ *** fetch all deposits x^ in S (S' are deposits in S, S'' == S \ S')
-                        Some S''' := (secrets a^ S'') /\    *** fetch all secrets a^ in S
+                        Some S''' := (secrets (secrets in p) S'') /\    *** fetch all secrets a^ in S
                         S''' |= predicate p .
 
     crl [C-AuthRev] : [t | t^ | icn U cn | Part] {A : a # N} | S => { A reveal a } [t | t^ | icn U cn | Part] (A : a # N | S) 
