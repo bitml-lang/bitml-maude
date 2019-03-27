@@ -219,6 +219,8 @@ mod BITML-PREDS is
     op has-deposit : -> Prop .
     op _has-deposit : Participant -> Prop .
     op _has-deposit>=_ : Participant Value -> Prop .
+    op _revealed : Secret -> Prop .
+
 
     var A : Participant .
     var C : Contract .
@@ -231,6 +233,7 @@ mod BITML-PREDS is
     var l : Label .
     var Part : Set{Participant} .
     var n m : Nat .
+    var a : Secret .
 
     eq < C, v > x | S |= contract-free = false .
     eq [t | t^ | icn U cn | Part] S |= contract-free = S |= contract-free .
@@ -245,6 +248,13 @@ mod BITML-PREDS is
     eq S:Configuration |= has-deposit = false [owise] .
     eq S:SemConfiguration |= has-deposit = false [owise] .
     eq S:LSemConfiguration |= has-deposit = false [owise] .
+
+    eq A:Participant : a # n:Nat | S |= a revealed = true .
+    eq [t | t^ | icn U cn | Part] S |= a revealed = S |= a revealed .
+    eq {l} [t | t^ | icn U cn | Part] S |= a revealed = S |= a revealed .
+    eq S:Configuration |= a revealed = false [owise] .
+    eq S:SemConfiguration |= a revealed = false [owise] .
+    eq S:LSemConfiguration |= a revealed = false [owise] .
     
     eq S:Configuration |= A has-deposit = S:Configuration |= A has-deposit>= 0 BTC .
     eq S:SemConfiguration |= A has-deposit = S:SemConfiguration |= A has-deposit>= 0 BTC .
