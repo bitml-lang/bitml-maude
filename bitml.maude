@@ -125,7 +125,7 @@ mod BITML-SEM is
                     if  strategy([t | t^ | icn U cn | Part] < (put x^ reveal a^ if p . C) + C', v > y | S, Someone put(x^,a^,y)) /\
                         z := fresh(cn) /\ 
                         Some (S' S'') := (deposits x^ S) /\ *** fetch all deposits x^ in S (S' are deposits in S, S'' == S \ S')
-                        Some S''' := (secrets (secrets in p) S'') /\    *** fetch all secrets a^ in S
+                        Some S''' := (secrets a^ S'') /\    *** fetch all secrets a^ in S
                         S''' |= predicate p .
 
     crl [C-AuthRev] : [t | t^ | icn U cn | Part] {A : a # N} | S => { A reveal a } [t | t^ | icn U cn | Part] (A : a # N | S) 
@@ -217,8 +217,9 @@ mod BITML-PREDS is
     subsort LSemConfiguration < State .
     op contract-free : -> Prop .
     op has-deposit : -> Prop .
-    op _has-deposit : Participant -> Prop .
+    op _has-deposit>_ : Participant Value -> Prop .
     op _has-deposit>=_ : Participant Value -> Prop .
+    op _has-deposit<=_ : Participant Value -> Prop .
     op _revealed : Secret -> Prop .
 
 
@@ -255,10 +256,6 @@ mod BITML-PREDS is
     eq S:Configuration |= a revealed = false [owise] .
     eq S:SemConfiguration |= a revealed = false [owise] .
     eq S:LSemConfiguration |= a revealed = false [owise] .
-    
-    eq S:Configuration |= A has-deposit = S:Configuration |= A has-deposit>= 0 BTC .
-    eq S:SemConfiguration |= A has-deposit = S:SemConfiguration |= A has-deposit>= 0 BTC .
-    eq S:LSemConfiguration |= A has-deposit = S:LSemConfiguration |= A has-deposit>= 0 BTC .
 
     ceq S |= A has-deposit>= m BTC = n >= m if n BTC := value of A in S .
     eq [t | t^ | icn U cn | Part] S |= A has-deposit>= v = S |= A has-deposit>= v .
@@ -266,6 +263,20 @@ mod BITML-PREDS is
     eq S:Configuration |= A has-deposit>= v = false [owise] .
     eq S:SemConfiguration |= A has-deposit>= v = false [owise] .
     eq S:LSemConfiguration |= A has-deposit>= v = false [owise] .
+
+    ceq S |= A has-deposit<= m BTC = n <= m if n BTC := value of A in S .
+    eq [t | t^ | icn U cn | Part] S |= A has-deposit<= v = S |= A has-deposit<= v .
+    eq {l} [t | t^ | icn U cn | Part] S |= A has-deposit<= v = S |= A has-deposit<= v .
+    eq S:Configuration |= A has-deposit<= v = false [owise] .
+    eq S:SemConfiguration |= A has-deposit<= v = false [owise] .
+    eq S:LSemConfiguration |= A has-deposit<= v = false [owise] .
+
+    ceq S |= A has-deposit> m BTC = n > m if n BTC := value of A in S .
+    eq [t | t^ | icn U cn | Part] S |= A has-deposit> v = S |= A has-deposit> v .
+    eq {l} [t | t^ | icn U cn | Part] S |= A has-deposit> v = S |= A has-deposit> v .
+    eq S:Configuration |= A has-deposit> v = false [owise] .
+    eq S:SemConfiguration |= A has-deposit> v = false [owise] .
+    eq S:LSemConfiguration |= A has-deposit> v = false [owise] .
 endm
 
 smod BITML-CHECK is
