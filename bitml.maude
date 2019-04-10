@@ -88,10 +88,10 @@ mod BITML-SEM is
     
     sort LockContract .
     sort LockSecretReveal .
-    subsort LockContract < Contract .
+    subsort LockContract < GuardedContract .
     subsort LockSecretReveal < Configuration .
     
-    op Lock : Contract -> LockContract [ctor frozen] .
+    op Lock : GuardedContract -> LockContract [ctor frozen] .
     op Lock : ConfSec -> LockSecretReveal [ctor frozen] .
 
     *** strategies
