@@ -149,6 +149,7 @@ fmod BITML-SYNTAX-CONS is
     op _==_ : Expression Expression -> Predicate [ctor prec 22 frozen comm] .       *** E == E'
 
     op _+_ : Expression Expression -> Sum [ctor prec 21 frozen comm assoc] .
+    op _-_ : Expression Expression -> Sum [ctor prec 21 frozen comm assoc] .        *** NEEDS TESTING
     op size(_) : Secret -> SecretSize [ctor prec 20 frozen] .
     op const(_) : Int -> Constant [ctor prec 20 frozen] .
 

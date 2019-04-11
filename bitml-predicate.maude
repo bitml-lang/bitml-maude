@@ -60,6 +60,8 @@ fmod BITML-PREDICATE-SAT is
     eq [ const(n) ] { S } = Success(n) .
     eq [ size(a) ] { (A : a # N) | S } = Success(N) .
     ceq [ E + E' ] { S } = Success(n + m) if Success(n) := [ E ] { S } /\ Success(m) := [ E' ] { S } .
+    ceq [ E - E' ] { S } = Success(n + (- m)) if Success(n) := [ E ] { S } /\ Success(m) := [ E' ] { S } .      *** NEEDS TESTING
+
 
     eq [ E ] { S } = Failure("Unable to evaluate the expression") [owise print "Error evaluating " E " in " S] .
 endfm
