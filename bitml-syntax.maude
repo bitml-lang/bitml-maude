@@ -162,6 +162,7 @@ fmod BITML-SYNTAX-CONS is
     op after_:_ : Nat GuardedContract -> After [ctor prec 25 frozen] .                                              *** [contr.after]
     op split(_) : List{SplitEntry} -> Split [ctor prec 25 frozen format (d d ++i n--i d)] .                         *** [contr.split]
     op _+_ : GuardedContract Contract -> Contract [comm assoc ctor id: 0 frozen format (d d d d)] .                 *** [contr.sum]
+    op _+_ : Contract Contract -> Contract [comm assoc ctor id: 0 frozen format (d d d d)] .                        *** [contr.sum]
 
     ***
     *** Configurations
