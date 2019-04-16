@@ -133,7 +133,7 @@ fmod BITML-SYNTAX-CONS is
     protecting LIST{Value} .
 
     op P(_) : Qid -> Participant [ctor prec 5] .
-    op _BTC : Nat -> Value [ctor prec 5] .                                                  *** n BTC
+    op _satoshi : Nat -> Value [ctor prec 5] .                                                  *** n satoshi
     op _~>_ : Value Contract -> SplitEntry [ctor prec 5 frozen format (ni d ++ --)] .       *** v' -> C
     op <_,_> : Participant Value -> AnonDeposit [ctor prec 5 frozen format (d d d s d d)] . *** <A,v>
     op <_,_> : Contract Value -> AnonContract [ctor prec 5 frozen format (d d d s d d)] .   *** <C,v>

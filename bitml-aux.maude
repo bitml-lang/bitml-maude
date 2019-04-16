@@ -142,7 +142,7 @@ fmod BITML-AUX is
     
     *** Sum for values
         op _+_ : Value Value -> Value [memo] .
-        eq n BTC + n' BTC = (n + n') BTC .
+        eq n satoshi + n' satoshi = (n + n') satoshi .
     
     ***
     *** Return the total amount value of a list of split entries
@@ -150,8 +150,8 @@ fmod BITML-AUX is
         op value(_) : List{SplitEntry} -> Value [memo] .
         op $value(_,_) : List{SplitEntry} Nat -> Value [memo] .
         eq value(sel) = $value(sel,0) .
-        eq $value((nil).List{SplitEntry},n) = n BTC .
-        eq $value(n BTC ~> C tail,n') = $value(tail, n + n') .
+        eq $value((nil).List{SplitEntry},n) = n satoshi .
+        eq $value(n satoshi ~> C tail,n') = $value(tail, n + n') .
     
     ***
     *** Return the total amount value of a Configuration, given a set of Participants
@@ -159,8 +159,8 @@ fmod BITML-AUX is
         op value of _ in _ : Participant Configuration -> Value [memo] .
         op $value(_,_,_) : Participant Configuration Nat -> Value [memo] .
         eq value of A in S = $value(A,S,0) .
-        eq $value(A,< A, n BTC > x | S, n') = $value(A,S, n + n') .
-        eq $value(A,S, n) = n BTC [owise].
+        eq $value(A,< A, n satoshi > x | S, n') = $value(A,S, n + n') .
+        eq $value(A,S, n) = n satoshi [owise].
 
     ***
     *** Option

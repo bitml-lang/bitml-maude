@@ -115,10 +115,10 @@ mod Examples-LIQUIDITY is
     eq S(WIN:Contract) = 
         toSemConf
         < split(
-            2 BTC ~> ( reveal b if const(0) <= size(b) <= const(1) . withdraw B + after t : withdraw A )
-            2 BTC ~> ( reveal a . withdraw A + after t : withdraw B )
-            2 BTC ~> WIN:Contract
-            ), 6 BTC > 'x
+            2 satoshi ~> ( reveal b if const(0) <= size(b) <= const(1) . withdraw B + after t : withdraw A )
+            2 satoshi ~> ( reveal a . withdraw A + after t : withdraw B )
+            2 satoshi ~> WIN:Contract
+            ), 6 satoshi > 'x
         | { A : a # N } 
         | { B : b # M } .
 
@@ -130,22 +130,22 @@ mod Examples-LIQUIDITY is
             + (after t' : reveal b . withdraw B) .
 
 
-    eq TCconf(C:Contract) = toSemConf < C:Contract, 2 BTC > 'x | {A : a # 10} | {B : b # 15} .
+    eq TCconf(C:Contract) = toSemConf < C:Contract, 2 satoshi > 'x | {A : a # 10} | {B : b # 15} .
 
     eq TC = reveal a . withdraw A + after t : withdraw B .
     
     eq TC' = reveal a . (
             reveal b . split(
-                1 BTC ~> (withdraw A)
-                1 BTC ~> (withdraw B)
+                1 satoshi ~> (withdraw A)
+                1 satoshi ~> (withdraw B)
             )
         )
         + after t : withdraw B .
 
     eq TC'' = reveal a . (
             reveal b . split(
-                1 BTC ~> (withdraw A)
-                1 BTC ~> (withdraw B)
+                1 satoshi ~> (withdraw A)
+                1 satoshi ~> (withdraw B)
             )
             + after t' : withdraw A
         )
@@ -189,7 +189,7 @@ endsm
 ***(
     reduce in Examples-LIQUIDITY-CHECK : modelCheck(LOTTERY, <> contract-free, 'bitml) .           *** false
     reduce in Examples-LIQUIDITY-CHECK : modelCheck(LIQUID-LOTTERY, <> contract-free, 'bitml) .    *** true
-    reduce in Examples-LIQUIDITY-CHECK : modelCheck(LIQUID-LOTTERY, []<> A has-deposit>= 4 BTC, 'bitml) .   *** true
+    reduce in Examples-LIQUIDITY-CHECK : modelCheck(LIQUID-LOTTERY, []<> A has-deposit>= 4 satoshi, 'bitml) .   *** true
 
     reduce in Examples-LIQUIDITY-CHECK : modelCheck(TCconf(TC), <> contract-free, 'bitml) .     *** true
     reduce in Examples-LIQUIDITY-CHECK : modelCheck(TCconf(TC'), <> contract-free, 'bitml) .    *** false

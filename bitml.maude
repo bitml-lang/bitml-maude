@@ -202,7 +202,7 @@ smod BITML-STRAT is
 
     *** Examples
     *** srew [1] in BITML-STRAT : S(WIN') using bitml ! .
-    *** srew in BITML-STRAT :  toSemConf < after 10 : withdraw A, 10 BTC > 'x using bitml ! .
+    *** srew in BITML-STRAT :  toSemConf < after 10 : withdraw A, 10 satoshi > 'x using bitml ! .
 endsm
 
 ***
@@ -243,7 +243,7 @@ mod BITML-PREDS is
     eq S:SemConfiguration |= contract-free = true [owise] .
     eq S:LSemConfiguration |= contract-free = true [owise] .
 
-    eq < A, n BTC > x | S |= has-deposit = true .
+    eq < A, n satoshi > x | S |= has-deposit = true .
     eq [t | t^ | icn U cn | Part] S |= has-deposit = S |= has-deposit .
     eq {l} [t | t^ | icn U cn | Part] S |= has-deposit = S |= has-deposit .
     eq S:Configuration |= has-deposit = false [owise] .
@@ -257,21 +257,21 @@ mod BITML-PREDS is
     eq S:SemConfiguration |= a revealed = false [owise] .
     eq S:LSemConfiguration |= a revealed = false [owise] .
 
-    ceq S |= A has-deposit>= m BTC = n >= m if n BTC := value of A in S .
+    ceq S |= A has-deposit>= m satoshi = n >= m if n satoshi := value of A in S .
     eq [t | t^ | icn U cn | Part] S |= A has-deposit>= v = S |= A has-deposit>= v .
     eq {l} [t | t^ | icn U cn | Part] S |= A has-deposit>= v = S |= A has-deposit>= v .
     eq S:Configuration |= A has-deposit>= v = false [owise] .
     eq S:SemConfiguration |= A has-deposit>= v = false [owise] .
     eq S:LSemConfiguration |= A has-deposit>= v = false [owise] .
 
-    ceq S |= A has-deposit<= m BTC = n <= m if n BTC := value of A in S .
+    ceq S |= A has-deposit<= m satoshi = n <= m if n satoshi := value of A in S .
     eq [t | t^ | icn U cn | Part] S |= A has-deposit<= v = S |= A has-deposit<= v .
     eq {l} [t | t^ | icn U cn | Part] S |= A has-deposit<= v = S |= A has-deposit<= v .
     eq S:Configuration |= A has-deposit<= v = false [owise] .
     eq S:SemConfiguration |= A has-deposit<= v = false [owise] .
     eq S:LSemConfiguration |= A has-deposit<= v = false [owise] .
 
-    ceq S |= A has-deposit> m BTC = n > m if n BTC := value of A in S .
+    ceq S |= A has-deposit> m satoshi = n > m if n satoshi := value of A in S .
     eq [t | t^ | icn U cn | Part] S |= A has-deposit> v = S |= A has-deposit> v .
     eq {l} [t | t^ | icn U cn | Part] S |= A has-deposit> v = S |= A has-deposit> v .
     eq S:Configuration |= A has-deposit> v = false [owise] .
