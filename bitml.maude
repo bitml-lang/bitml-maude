@@ -110,7 +110,7 @@ mod BITML-SEM is
     ***
     
     *** NOTE: only initial deposits can be destroyed, i.e. those who are in icn
-    crl [Dep-AuthDestroy] : [t | t^ | x, icn U cn | Part] < A , v > x | S => { A authorize-destroy-of x } [t | t^ | icn U cn | Part] < A , v > x | A [ x |># ] | S
+    crl [Dep-AuthDestroy] : [t | t^ | x, icn U cn | Part] < A , v > x | S => { A authorize-destroy-of x } [t | t^ | x, icn U cn | Part] < A , v > x | A [ x |># ] | S
                     if  strategy([t | t^ | x, icn U cn | Part] < A , v > x | S, A authorize-destroy-of x) /\
                         None := (searchAuthDestroy A x S) .  *** check that A has not already authorized to destroy x
 
