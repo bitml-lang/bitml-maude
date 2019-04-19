@@ -221,6 +221,7 @@ mod BITML-PREDS is
     op _has-deposit>=_ : Participant Value -> Prop .
     op _has-deposit<=_ : Participant Value -> Prop .
     op _revealed : Secret -> Prop .
+    op _revealed-size_ : Secret Nat -> Prop .
 
 
     var A : Participant .
@@ -256,6 +257,13 @@ mod BITML-PREDS is
     eq S:Configuration |= a revealed = false [owise] .
     eq S:SemConfiguration |= a revealed = false [owise] .
     eq S:LSemConfiguration |= a revealed = false [owise] .
+
+    ceq A:Participant : a # n | S |= a revealed-size m = true if (n == m) .
+    eq [t | t^ | icn U cn | Part] S |= a revealed-size m = S |= a revealed-size m .
+    eq {l} [t | t^ | icn U cn | Part] S |= a revealed-size m = S |= a revealed-size m .
+    eq S:Configuration |= a revealed-size m = false [owise] .
+    eq S:SemConfiguration |= a revealed-size m = false [owise] .
+    eq S:LSemConfiguration |= a revealed-size m = false [owise] .
 
     ceq S |= A has-deposit>= m satoshi = n >= m if n satoshi := value of A in S .
     eq [t | t^ | icn U cn | Part] S |= A has-deposit>= v = S |= A has-deposit>= v .
