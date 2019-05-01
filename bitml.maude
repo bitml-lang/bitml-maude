@@ -29,7 +29,7 @@ mod BITML-SEM is
     vars s s' : Secret .
     vars s^ : Set{Secret} .
     vars l l' : Label .
-    vars icn cn cn' : Set{Name} .
+    vars cn cn' : Set{Name} .
     var splitEntries : List{SplitEntry} .
     vars p p' : Predicate .
     vars putDeps putSecs : Option .
@@ -40,7 +40,7 @@ mod BITML-SEM is
 
     sort Context .
     
-    op [_|_|_U_|_] : Nat List{Nat<} Set{Name} Set{Name} Set{Participant} -> Context [ctor frozen] .
+    op [_|_|_|_] : Nat List{Nat<} Set{Name} Set{Participant} -> Context [ctor frozen] .
     ops Adv Someone : -> Participant .
 
     op __ : Context Configuration -> SemConfiguration [ctor frozen] .
@@ -48,7 +48,7 @@ mod BITML-SEM is
     op {_}_ : Label SemConfiguration -> LSemConfiguration [ctor frozen] .
     
     op toSemConf_ : Configuration -> SemConfiguration [prec 50] .
-    eq toSemConf S = [ 0 | ticks(S) | (names in S) U empty | (participants in S) ] S .
+    eq toSemConf S = [ 0 | ticks(S) | (names in S) | (participants in S) ] S .
 
     op toConf_ : SemConfiguration -> Configuration [prec 50] .
     eq toConf C:Context S = S .
@@ -56,8 +56,6 @@ mod BITML-SEM is
     *** Labels
     sort Label .
     
-    op _authorize-destroy-of_ : Participant Name -> Label [ctor frozen] .
-    op _destroy_ : Participant Name -> Label [ctor frozen] .
     op _split_ : Participant Name -> Label [ctor frozen] .
     op _put(_,_,_) : Participant Set{Name} Set{Secret} Name -> Label [ctor frozen] .
     op _reveal_ : Participant Secret  -> Label [ctor frozen] .
@@ -76,8 +74,6 @@ mod BITML-SEM is
     eq cv(l) = None [owise].
     
     op part(_) : Label -> Participant .
-    eq part(Any authorize-destroy-of x) = Any .
-    eq part(Any destroy x) = Any .
     eq part(Any split(x)) = Any .
     eq part(Any put(x^,a^,y)) = Any .
     eq part(Any reveal a) = Any .
@@ -100,68 +96,60 @@ mod BITML-SEM is
 
     *** Allow progression of labelled configuration (timed)
     
-    crl [Rifl] : {l} [t | t^ | icn U cn | Part] S => {l'} [t' | t'^ | icn U cn' | Part] S' 
-        if  [t | t^ | icn U cn | Part] S => {l'} [t' | t'^ | icn U cn' | Part] S' .
+    crl [Rifl] : {l} [t | t^ | cn | Part] S => {l'} [t' | t'^ | cn' | Part] S' 
+        if  [t | t^ | cn | Part] S => {l'} [t' | t'^ | cn' | Part] S' .
 
-    rl [Finalize] : {l} [t | t^ | icn U cn | Part] S => [t | t^ | icn U cn | Part] S .
+    rl [Finalize] : {l} [t | t^ | cn | Part] S => [t | t^ | cn | Part] S .
 
     ***
     *** [...] S => {l} [...] S'    
     ***
     
-    *** NOTE: only initial deposits can be destroyed, i.e. those who are in icn
-    crl [Dep-AuthDestroy] : [t | t^ | x, icn U cn | Part] < A , v > x | S => { A authorize-destroy-of x } [t | t^ | x, icn U cn | Part] < A , v > x | A [ x |># ] | S
-                    if  strategy([t | t^ | x, icn U cn | Part] < A , v > x | S, A authorize-destroy-of x) /\
-                        None := (searchAuthDestroy A x S) .  *** check that A has not already authorized to destroy x
-
-    crl [Dep-Destroy] : [t | t^ | icn U cn | Part] < A , v > x | A [ x |># ] | S => { Someone destroy x } [t | t^ | icn U cn | Part] S 
-                    if  strategy([t | t^ | icn U cn | Part] < A , v > x | A [ x |># ] | S, Someone destroy x) .
-
-    crl [C-Split] : [t | t^ | icn U cn | Part] < (split (splitEntries) ) + C, v > y | S => { Someone split(y) } [t | t^ | icn U cn, cn' | Part] ((|| splitEntries cn') | S )
-                    if  strategy([t | t^ | icn U cn | Part] < (split (splitEntries) ) + C, v > y | S, Someone split(y)) /\
+    crl [C-Split] : [t | t^ | cn | Part] < (split (splitEntries) ) + C, v > y | S => { Someone split(y) } [t | t^ | cn, cn' | Part] ((|| splitEntries cn') | S )
+                    if  strategy([t | t^ | cn | Part] < (split (splitEntries) ) + C, v > y | S, Someone split(y)) /\
                         cn' := fresh(cn,size(splitEntries)) .
 
-    crl [C-PutReveal] : [t | t^ | icn U cn | Part] < (put x^ reveal a^ if p . C) + C', v > y | S => { Someone put(x^,a^,y) } [t | t^ | icn U cn, z | Part] ( < C, v > z | S'')
-                    if  strategy([t | t^ | icn U cn | Part] < (put x^ reveal a^ if p . C) + C', v > y | S, Someone put(x^,a^,y)) /\
+    crl [C-PutReveal] : [t | t^ | cn | Part] < (put x^ reveal a^ if p . C) + C', v > y | S => { Someone put(x^,a^,y) } [t | t^ | cn, z | Part] ( < C, v > z | S'')
+                    if  strategy([t | t^ | cn | Part] < (put x^ reveal a^ if p . C) + C', v > y | S, Someone put(x^,a^,y)) /\
                         z := fresh(cn) /\ 
                         Some (S' S'') := (deposits x^ S) /\ *** fetch all deposits x^ in S (S' are deposits in S, S'' == S \ S')
                         Some S''' := (secrets a^ S'') /\    *** fetch all secrets a^ in S
                         S''' |= predicate p .
 
-    crl [C-AuthRev] : [t | t^ | icn U cn | Part] {A : a # N} | S => { A reveal a } [t | t^ | icn U cn | Part] (A : a # N | S) 
-                    if  strategy([t | t^ | icn U cn | Part] {A : a # N} | S, A reveal a) .
+    crl [C-AuthRev] : [t | t^ | cn | Part] {A : a # N} | S => { A reveal a } [t | t^ | cn | Part] (A : a # N | S) 
+                    if  strategy([t | t^ | cn | Part] {A : a # N} | S, A reveal a) .
 
-    crl [C-LockAuthRev] : [t | t^ | icn U cn | Part] {A : a # N} | S => { A lock-reveal a } [t | t^ | icn U cn | Part] Lock({A : a # N}) | S 
-                    if  strategy([t | t^ | icn U cn | Part] {A : a # N} | S, A lock-reveal a) .
+    crl [C-LockAuthRev] : [t | t^ | cn | Part] {A : a # N} | S => { A lock-reveal a } [t | t^ | cn | Part] Lock({A : a # N}) | S 
+                    if  strategy([t | t^ | cn | Part] {A : a # N} | S, A lock-reveal a) .
 
-    crl [C-Withdraw] : [t | t^ | icn U cn | Part] < withdraw A + C, v > y | S => { Someone do withdraw A v from y } [t | t^ | icn U cn, z | Part] (< A, v > z | S)
-                    if  strategy([t | t^ | icn U cn | Part] < withdraw A + C, v > y | S, Someone do withdraw A v from y) /\
+    crl [C-Withdraw] : [t | t^ | cn | Part] < withdraw A + C, v > y | S => { Someone do withdraw A v from y } [t | t^ | cn, z | Part] (< A, v > z | S)
+                    if  strategy([t | t^ | cn | Part] < withdraw A + C, v > y | S, Someone do withdraw A v from y) /\
                         z := fresh(cn) .
 
-    crl [C-AuthControl] : [t | t^ | icn U cn | Part] < (A, A^) : D + C, v > y | S => { A authorize D in y } [t | t^ | icn U cn | Part] (< (A, A^) : D + C, v > y | A [ y |> (A, A^) : D ] | S)
-                    if  strategy([t | t^ | icn U cn | Part] < (A, A^) : D + C, v > y | S, A authorize D in y) /\
+    crl [C-AuthControl] : [t | t^ | cn | Part] < (A, A^) : D + C, v > y | S => { A authorize D in y } [t | t^ | cn | Part] (< (A, A^) : D + C, v > y | A [ y |> (A, A^) : D ] | S)
+                    if  strategy([t | t^ | cn | Part] < (A, A^) : D + C, v > y | S, A authorize D in y) /\
                         None := (searchAuth A ((A, A^) : D) y S) .  *** check that branch D is not already authorized by A
 
-    crl [C-LockAuthControl] : [t | t^ | icn U cn | Part] < (A, A^) : D + C, v > y | S => { A lock D in y } [t | t^ | icn U cn | Part] (< Lock((A, A^) : D) + C, v > y | S)
-                    if  strategy([t | t^ | icn U cn | Part] < (A, A^) : D + C, v > y | S, A lock D in y) .
+    crl [C-LockAuthControl] : [t | t^ | cn | Part] < (A, A^) : D + C, v > y | S => { A lock D in y } [t | t^ | cn | Part] (< Lock((A, A^) : D) + C, v > y | S)
+                    if  strategy([t | t^ | cn | Part] < (A, A^) : D + C, v > y | S, A lock D in y) .
 
-    crl [C-Control1] : [t | t^ | icn U cn | Part] < A^ : after t' : D + C, v > y | S => {l'} [t | t^ | icn U cn' | Part] S'
+    crl [C-Control1] : [t | t^ | cn | Part] < A^ : after t' : D + C, v > y | S => {l'} [t | t^ | cn' | Part] S'
                     if  t >= t' /\                                                      *** timelocks satisfied
                         Some (S'' S''') := (searchAuth A^ (A^ : after t' : D) y S) /\   *** S'' are authorizations, S''' ==  S \ S''
-                        [t | t^ | icn U cn | Part] < D, v > y | S''' => {l'} [t | t^ | icn U cn' | Part] S' /\
+                        [t | t^ | cn | Part] < D, v > y | S''' => {l'} [t | t^ | cn' | Part] S' /\
                         Some y == cv(l') .                                              *** withdraw/split/put-reveal
 
-    crl [C-Control2] : [t | t^ | icn U cn | Part] < after t' : D + C, v > y | S => {l'} [t | t^ | icn U cn' | Part] S'
+    crl [C-Control2] : [t | t^ | cn | Part] < after t' : D + C, v > y | S => {l'} [t | t^ | cn' | Part] S'
                     if  t >= t' /\                                                      *** timelocks satisfied
-                        [t | t^ | icn U cn | Part] < D, v > y | S => {l'} [t | t^ | icn U cn' | Part] S' /\       *** D progresses
+                        [t | t^ | cn | Part] < D, v > y | S => {l'} [t | t^ | cn' | Part] S' /\       *** D progresses
                         Some y == cv(l') .                                              *** withdraw/split/put-reveal
 
-    crl [C-Control3] : [t | t^ | icn U cn | Part] < A^ : D + C, v > y | S => {l'} [t | t^ | icn U cn' | Part] S'
+    crl [C-Control3] : [t | t^ | cn | Part] < A^ : D + C, v > y | S => {l'} [t | t^ | cn' | Part] S'
                     if  Some (S'' S''') := (searchAuth A^ (A^ : D) y S) /\              *** S'' are authorizations, S''' == S \ S''
-                        [t | t^ | icn U cn | Part] < D, v > y | S''' => {l'} [t | t^ | icn U cn' | Part] S' /\    *** D progresses
+                        [t | t^ | cn | Part] < D, v > y | S''' => {l'} [t | t^ | cn' | Part] S' /\    *** D progresses
                         Some y == cv(l') .                                              *** withdraw/split/put-reveal
 
-    crl [Delay] : [t | t^ | icn U cn | Part] S => {delta (sd(t',t))} [t' | t'^ | icn U cn | Part] S 
+    crl [Delay] : [t | t^ | cn | Part] S => {delta (sd(t',t))} [t' | t'^ | cn | Part] S 
                     if t^ =/= nil /\ t' := head(t^) /\ t'^ := tail(t^) .
 
 endm
@@ -184,9 +172,7 @@ smod BITML-STRAT is
     *** default Maude strategy
     sd default := all ! .
     sd all\delay := Rifl{bitml-1} or-else (
-        Dep-AuthDestroy
-      | Dep-Destroy
-      | C-Split
+        C-Split
       | C-PutReveal
       | C-AuthRev
       | C-LockAuthRev
@@ -238,50 +224,50 @@ mod BITML-PREDS is
     var a : Secret .
 
     eq < C, v > x | S |= contract-free = false .
-    eq [t | t^ | icn U cn | Part] S |= contract-free = S |= contract-free .
-    eq {l} [t | t^ | icn U cn | Part] S |= contract-free = S |= contract-free .
+    eq [t | t^ | cn | Part] S |= contract-free = S |= contract-free .
+    eq {l} [t | t^ | cn | Part] S |= contract-free = S |= contract-free .
     eq S:Configuration |= contract-free = true [owise] .
     eq S:SemConfiguration |= contract-free = true [owise] .
     eq S:LSemConfiguration |= contract-free = true [owise] .
 
     eq < A, n satoshi > x | S |= has-deposit = true .
-    eq [t | t^ | icn U cn | Part] S |= has-deposit = S |= has-deposit .
-    eq {l} [t | t^ | icn U cn | Part] S |= has-deposit = S |= has-deposit .
+    eq [t | t^ | cn | Part] S |= has-deposit = S |= has-deposit .
+    eq {l} [t | t^ | cn | Part] S |= has-deposit = S |= has-deposit .
     eq S:Configuration |= has-deposit = false [owise] .
     eq S:SemConfiguration |= has-deposit = false [owise] .
     eq S:LSemConfiguration |= has-deposit = false [owise] .
 
     eq A:Participant : a # n:Nat | S |= a revealed = true .
-    eq [t | t^ | icn U cn | Part] S |= a revealed = S |= a revealed .
-    eq {l} [t | t^ | icn U cn | Part] S |= a revealed = S |= a revealed .
+    eq [t | t^ | cn | Part] S |= a revealed = S |= a revealed .
+    eq {l} [t | t^ | cn | Part] S |= a revealed = S |= a revealed .
     eq S:Configuration |= a revealed = false [owise] .
     eq S:SemConfiguration |= a revealed = false [owise] .
     eq S:LSemConfiguration |= a revealed = false [owise] .
 
     ceq A:Participant : a # n | S |= a revealed-size m = true if (n == m) .
-    eq [t | t^ | icn U cn | Part] S |= a revealed-size m = S |= a revealed-size m .
-    eq {l} [t | t^ | icn U cn | Part] S |= a revealed-size m = S |= a revealed-size m .
+    eq [t | t^ | cn | Part] S |= a revealed-size m = S |= a revealed-size m .
+    eq {l} [t | t^ | cn | Part] S |= a revealed-size m = S |= a revealed-size m .
     eq S:Configuration |= a revealed-size m = false [owise] .
     eq S:SemConfiguration |= a revealed-size m = false [owise] .
     eq S:LSemConfiguration |= a revealed-size m = false [owise] .
 
     ceq S |= A has-deposit>= m satoshi = n >= m if n satoshi := value of A in S .
-    eq [t | t^ | icn U cn | Part] S |= A has-deposit>= v = S |= A has-deposit>= v .
-    eq {l} [t | t^ | icn U cn | Part] S |= A has-deposit>= v = S |= A has-deposit>= v .
+    eq [t | t^ | cn | Part] S |= A has-deposit>= v = S |= A has-deposit>= v .
+    eq {l} [t | t^ | cn | Part] S |= A has-deposit>= v = S |= A has-deposit>= v .
     eq S:Configuration |= A has-deposit>= v = false [owise] .
     eq S:SemConfiguration |= A has-deposit>= v = false [owise] .
     eq S:LSemConfiguration |= A has-deposit>= v = false [owise] .
 
     ceq S |= A has-deposit<= m satoshi = n <= m if n satoshi := value of A in S .
-    eq [t | t^ | icn U cn | Part] S |= A has-deposit<= v = S |= A has-deposit<= v .
-    eq {l} [t | t^ | icn U cn | Part] S |= A has-deposit<= v = S |= A has-deposit<= v .
+    eq [t | t^ | cn | Part] S |= A has-deposit<= v = S |= A has-deposit<= v .
+    eq {l} [t | t^ | cn | Part] S |= A has-deposit<= v = S |= A has-deposit<= v .
     eq S:Configuration |= A has-deposit<= v = false [owise] .
     eq S:SemConfiguration |= A has-deposit<= v = false [owise] .
     eq S:LSemConfiguration |= A has-deposit<= v = false [owise] .
 
     ceq S |= A has-deposit> m satoshi = n > m if n satoshi := value of A in S .
-    eq [t | t^ | icn U cn | Part] S |= A has-deposit> v = S |= A has-deposit> v .
-    eq {l} [t | t^ | icn U cn | Part] S |= A has-deposit> v = S |= A has-deposit> v .
+    eq [t | t^ | cn | Part] S |= A has-deposit> v = S |= A has-deposit> v .
+    eq {l} [t | t^ | cn | Part] S |= A has-deposit> v = S |= A has-deposit> v .
     eq S:Configuration |= A has-deposit> v = false [owise] .
     eq S:SemConfiguration |= A has-deposit> v = false [owise] .
     eq S:LSemConfiguration |= A has-deposit> v = false [owise] .

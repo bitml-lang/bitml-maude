@@ -262,16 +262,6 @@ fmod BITML-AUX is
         eq $searchAuth A^ D y S accConf = None [owise] .
 
     ***
-    *** Given a participant A and a deposit name,
-    *** search for destroy authorization A [ x |># ] within a configuration S.
-    *** Return a Some(S' R) with S' == the authorization A [ x |># ] and R == S \ S'
-    *** or None if the authorization is not found.
-    ***
-        op searchAuthDestroy___ : Participant Name Configuration -> Option [memo] .
-        eq searchAuthDestroy A x (A [ x |># ] | S) = Some ((A [ x |># ]) S) .
-        eq searchAuthDestroy A x S = None [owise] .
-
-    ***
     *** Return a ordered set of absolute times
     ***
         op ticks : Configuration -> List{Nat<} [memo] .
