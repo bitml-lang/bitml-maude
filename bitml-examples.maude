@@ -16,7 +16,7 @@ mod Example-1.0 is
 
     *** strategy
     ***     A does not authorize to destroy the deposit x
-    ***eq strategy(S:SemConfiguration, A authorize-destroy-of x) = false .
+    eq strategy(S:SemConfiguration, A authorize-destroy-of x) = false .
 endm
 
 ***
@@ -39,7 +39,7 @@ mod Example-1.1 is
     ***     A does not authorize to destroy any deposit, B does
     *** result
     ***     only B's deposits will be destroyed
-    ***eq strategy(S:SemConfiguration, A authorize-destroy-of x:Name) = false .
+    eq strategy(S:SemConfiguration, A authorize-destroy-of x:Name) = false .
 endm
 
 ***
@@ -77,12 +77,12 @@ mod Example-2.0 is
     op S : -> SemConfiguration .
 
     *** deposit
-    eq S = [0 | 0 4 | x | A] < A, v > x .
+    eq S = [0 | 0 4 | x U empty | A] < A, v > x .
 
     *** strategy
     ***     A does not authorize to destroy the deposit x
-    ***eq strategy([t:Nat | t^:List{Nat<} | cn:Set{Name} U cn':Set{Name} | Part:Set{Participant}] S:Configuration, A authorize-destroy-of x) = 
-    ***    t:Nat >= 5 .
+    eq strategy([t:Nat | t^:List{Nat<} | cn:Set{Name} U cn':Set{Name} | Part:Set{Participant}] S:Configuration, A authorize-destroy-of x) = 
+        t:Nat >= 5 .
 endm
 
 ***
