@@ -65,6 +65,8 @@ mod BITML-SEM is
     op _ do withdraw _ _ from _ : Participant Participant Value Name -> Label [ctor frozen] .
     op _authorize_in_ : Participant Contract Name -> Label [ctor frozen] .
     op _lock_in_ : Participant Contract Name -> Label [ctor frozen] .
+    op _lock : Participant -> Label [ctor frozen] .
+
 
     op delta_ : Nat -> Label [ctor frozen] .
 
@@ -112,7 +114,8 @@ mod BITML-SEM is
     *** NOTE: only initial deposits can be destroyed, i.e. those who are in icn
     crl [Dep-AuthDestroy] : [t | t^ | x, icn U cn | Part] < A , v > x | S => { A authorize-destroy-of x } [t | t^ | x, icn U cn | Part] < A , v > x | A [ x |># ] | S
                     if  strategy([t | t^ | x, icn U cn | Part] < A , v > x | S, A authorize-destroy-of x) /\
-                        None := (searchAuthDestroy A x S) .  *** check that A has not already authorized to destroy x
+                        None := (searchAuthDestroy A x S) /\  *** check that A has not already authorized to destroy x
+                        (searchLock A S) == false .
 
     crl [Dep-Destroy] : [t | t^ | icn U cn | Part] < A , v > x | A [ x |># ] | S => { Someone destroy x } [t | t^ | icn U cn | Part] S 
                     if  strategy([t | t^ | icn U cn | Part] < A , v > x | A [ x |># ] | S, Someone destroy x) .
@@ -129,21 +132,15 @@ mod BITML-SEM is
                         S''' |= predicate p .
 
     crl [C-AuthRev] : [t | t^ | icn U cn | Part] {A : a # N} | S => { A reveal a } [t | t^ | icn U cn | Part] (A : a # N | S) 
-                    if  strategy([t | t^ | icn U cn | Part] {A : a # N} | S, A reveal a) .
-
-    crl [C-LockAuthRev] : [t | t^ | icn U cn | Part] {A : a # N} | S => { A lock-reveal a } [t | t^ | icn U cn | Part] Lock({A : a # N}) | S 
-                    if  strategy([t | t^ | icn U cn | Part] {A : a # N} | S, A lock-reveal a) .
+                    if (searchLock A S) == false .
 
     crl [C-Withdraw] : [t | t^ | icn U cn | Part] < withdraw A + C, v > y | S => { Someone do withdraw A v from y } [t | t^ | icn U cn, z | Part] (< A, v > z | S)
                     if  strategy([t | t^ | icn U cn | Part] < withdraw A + C, v > y | S, Someone do withdraw A v from y) /\
                         z := fresh(cn) .
 
     crl [C-AuthControl] : [t | t^ | icn U cn | Part] < (A, A^) : D + C, v > y | S => { A authorize D in y } [t | t^ | icn U cn | Part] (< (A, A^) : D + C, v > y | A [ y |> (A, A^) : D ] | S)
-                    if  strategy([t | t^ | icn U cn | Part] < (A, A^) : D + C, v > y | S, A authorize D in y) /\
+                    if  (searchLock A S) == false /\
                         None := (searchAuth A ((A, A^) : D) y S) .  *** check that branch D is not already authorized by A
-
-    crl [C-LockAuthControl] : [t | t^ | icn U cn | Part] < (A, A^) : D + C, v > y | S => { A lock D in y } [t | t^ | icn U cn | Part] (< Lock((A, A^) : D) + C, v > y | S)
-                    if  strategy([t | t^ | icn U cn | Part] < (A, A^) : D + C, v > y | S, A lock D in y) .
 
     crl [C-Control1] : [t | t^ | icn U cn | Part] < A^ : after t' : D + C, v > y | S => {l'} [t | t^ | icn U cn' | Part] S'
                     if  t >= t' /\                                                      *** timelocks satisfied
@@ -163,6 +160,9 @@ mod BITML-SEM is
 
     crl [Delay] : [t | t^ | icn U cn | Part] S => {delta (sd(t',t))} [t' | t'^ | icn U cn | Part] S 
                     if t^ =/= nil /\ t' := head(t^) /\ t'^ := tail(t^) .
+
+    crl [C-Lock] : [t | t^ | icn U cn | Part] S => {Any lock} [t | t^ | icn U cn | Part] lock(Any) | S  
+                    if (searchLock Any S) == false .
 
 endm
 
@@ -189,9 +189,8 @@ smod BITML-STRAT is
       | C-Split
       | C-PutReveal
       | C-AuthRev
-      | C-LockAuthRev
+      | C-Lock
       | C-Withdraw
-      | C-LockAuthControl
       | C-AuthControl
       | C-Control1{all\delay}
       | C-Control2{all\delay}

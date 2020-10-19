@@ -71,7 +71,8 @@ fmod BITML-SORTS is
     sort Auth .                 *** A[chi] 
     sort ConfSec .              *** {A:a#N}
     sort ConfRev .              *** A:a#N
-    subsorts ActContract Deposit Auth ConfSec ConfRev < Configuration .
+    sort Lock .                 *** lock(A)
+    subsorts ActContract Deposit Auth ConfSec ConfRev Lock < Configuration .
 
     ***
     *** Authorization
@@ -85,6 +86,7 @@ fmod BITML-SORTS is
     sort Donate .               *** x |> B
     sort Destroy .              *** x^,i |> y
     subsort CommitSec SpendDep TakeBranch Join Divide Donate Destroy < AuthAction .
+
 endfm
 
 ***
@@ -174,6 +176,8 @@ fmod BITML-SYNTAX-CONS is
     op {_:_#_} : Participant Secret Nat -> ConfSec [ctor prec 35 frozen] .                                      *** [conf.committed-secret]
     op _:_#_ : Participant Secret Nat -> ConfRev [ctor prec 35 frozen] .                                        *** [conf.revealed-secret]
     op _|_ : Configuration Configuration -> Configuration [comm assoc ctor id: 0 frozen] .                      *** [conf.parallel]
+
+    op lock(_) : Participant -> Lock [ctor prec 35 frozen] .                                            
 
     ***
     *** Authorization

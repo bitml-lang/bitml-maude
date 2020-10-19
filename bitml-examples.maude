@@ -186,12 +186,13 @@ endsm
 ***
 
 
-***(
+
     reduce in Examples-LIQUIDITY-CHECK : modelCheck(LOTTERY, <> contract-free, 'bitml) .           *** false
     reduce in Examples-LIQUIDITY-CHECK : modelCheck(LIQUID-LOTTERY, <> contract-free, 'bitml) .    *** true
-    reduce in Examples-LIQUIDITY-CHECK : modelCheck(LIQUID-LOTTERY, []<> A has-deposit>= 4 satoshi, 'bitml) .   *** true
+ ***(   reduce in Examples-LIQUIDITY-CHECK : modelCheck(LIQUID-LOTTERY, []<> A has-deposit>= 4 satoshi, 'bitml) .   *** true
 
     reduce in Examples-LIQUIDITY-CHECK : modelCheck(TCconf(TC), <> contract-free, 'bitml) .     *** true
     reduce in Examples-LIQUIDITY-CHECK : modelCheck(TCconf(TC'), <> contract-free, 'bitml) .    *** false
     reduce in Examples-LIQUIDITY-CHECK : modelCheck(TCconf(TC''), <> contract-free, 'bitml) .   *** true
-)
+
+)***
