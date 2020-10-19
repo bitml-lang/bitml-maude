@@ -170,6 +170,7 @@ fmod BITML-SYNTAX-CONS is
     *** Configurations
     ***
     op 0 : -> Configuration [ctor] .                                                                            *** [conf.id]
+    op lock(_) : Participant -> Lock [ctor prec 15 frozen] .                                            
     op __ : AnonContract Name -> ActContract [ctor prec 15 frozen format (d s d)] .                             *** [conf.active-contract]
     op __ : AnonDeposit Name -> Deposit [ctor prec 15 frozen format (d s d)] .                                  *** [conf.deposit]
     op _[_] : Participant AuthAction -> Auth [ctor prec 35 frozen] .                                            *** [conf.authorization]
@@ -177,7 +178,6 @@ fmod BITML-SYNTAX-CONS is
     op _:_#_ : Participant Secret Nat -> ConfRev [ctor prec 35 frozen] .                                        *** [conf.revealed-secret]
     op _|_ : Configuration Configuration -> Configuration [comm assoc ctor id: 0 frozen] .                      *** [conf.parallel]
 
-    op lock(_) : Participant -> Lock [ctor prec 35 frozen] .                                            
 
     ***
     *** Authorization

@@ -154,10 +154,10 @@ mod Examples-LIQUIDITY is
     *** strategies
 
     *** A never locks her secrets
-    eq strategy(S:SemConfiguration, A lock-reveal a:Secret) = false .
+    ***eq strategy(S:SemConfiguration, A lock-reveal a:Secret) = false .
 
     *** A never locks her authorizations
-    eq strategy(S:SemConfiguration, A lock D:GuardedContract in x:Name) = false .
+    ***eq strategy(S:SemConfiguration, A lock D:GuardedContract in x:Name) = false .
 
     *** No one destroys a deposit
     ***eq strategy(S:SemConfiguration, A:Participant authorize-destroy-of x:Name) = false .
@@ -188,11 +188,13 @@ endsm
 
 
     reduce in Examples-LIQUIDITY-CHECK : modelCheck(LOTTERY, <> contract-free, 'bitml) .           *** false
-    reduce in Examples-LIQUIDITY-CHECK : modelCheck(LIQUID-LOTTERY, <> contract-free, 'bitml) .    *** true
- ***(   reduce in Examples-LIQUIDITY-CHECK : modelCheck(LIQUID-LOTTERY, []<> A has-deposit>= 4 satoshi, 'bitml) .   *** true
+    ***reduce in Examples-LIQUIDITY-CHECK : modelCheck(LIQUID-LOTTERY, <> contract-free, 'bitml) .    *** true
+    ***reduce in Examples-LIQUIDITY-CHECK : modelCheck(LIQUID-LOTTERY, []<> A has-deposit>= 4 satoshi, 'bitml) .   *** true
 
-    reduce in Examples-LIQUIDITY-CHECK : modelCheck(TCconf(TC), <> contract-free, 'bitml) .     *** true
-    reduce in Examples-LIQUIDITY-CHECK : modelCheck(TCconf(TC'), <> contract-free, 'bitml) .    *** false
-    reduce in Examples-LIQUIDITY-CHECK : modelCheck(TCconf(TC''), <> contract-free, 'bitml) .   *** true
+    ***reduce in Examples-LIQUIDITY-CHECK : modelCheck(TCconf(TC), <> contract-free, 'bitml) .     *** true
+    ***reduce in Examples-LIQUIDITY-CHECK : modelCheck(TCconf(TC'), <> contract-free, 'bitml) .    *** false
+    ***reduce in Examples-LIQUIDITY-CHECK : modelCheck(TCconf(TC''), <> contract-free, 'bitml) .   *** true
 
-)***
+*** testing the lock functions
+reduce  searchLock A lock(A) .
+reduce  searchLock A A : a # 1 .
