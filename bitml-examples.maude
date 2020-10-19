@@ -153,6 +153,9 @@ mod Examples-LIQUIDITY is
 
     *** strategies
 
+    eq strategy(S:SemConfiguration, A lock) = false .
+
+
     *** A never locks her secrets
     ***eq strategy(S:SemConfiguration, A lock-reveal a:Secret) = false .
 
@@ -169,7 +172,7 @@ mod Examples-LIQUIDITY is
     ***eq strategy(S:SemConfiguration, B reveal a:Secret) = false .
 
     *** No one reveal a secret
-    ***eq strategy(S:SemConfiguration, A:Participant reveal a:Secret) = false .
+    ***eq strategy(S:SemConfiguration, A:Participan t reveal a:Secret) = false .
 
     *** B authorizes any contract
     ***eq strategy(S:SemConfiguration, B authorize D:GuardedContract in y:Name) = true .
@@ -186,9 +189,8 @@ endsm
 ***
 
 
-
     reduce in Examples-LIQUIDITY-CHECK : modelCheck(LOTTERY, <> contract-free, 'bitml) .           *** false
-    ***reduce in Examples-LIQUIDITY-CHECK : modelCheck(LIQUID-LOTTERY, <> contract-free, 'bitml) .    *** true
+    reduce in Examples-LIQUIDITY-CHECK : modelCheck(LIQUID-LOTTERY, <> contract-free, 'bitml) .    *** true
     ***reduce in Examples-LIQUIDITY-CHECK : modelCheck(LIQUID-LOTTERY, []<> A has-deposit>= 4 satoshi, 'bitml) .   *** true
 
     ***reduce in Examples-LIQUIDITY-CHECK : modelCheck(TCconf(TC), <> contract-free, 'bitml) .     *** true
@@ -196,5 +198,5 @@ endsm
     ***reduce in Examples-LIQUIDITY-CHECK : modelCheck(TCconf(TC''), <> contract-free, 'bitml) .   *** true
 
 *** testing the lock functions
-reduce  searchLock A lock(A) .
-reduce  searchLock A A : a # 1 .
+reduce  isUnlocked A lock(A) .
+reduce  isUnlocked A A : a # 1 .

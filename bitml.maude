@@ -115,7 +115,7 @@ mod BITML-SEM is
     crl [Dep-AuthDestroy] : [t | t^ | x, icn U cn | Part] < A , v > x | S => { A authorize-destroy-of x } [t | t^ | x, icn U cn | Part] < A , v > x | A [ x |># ] | S
                     if  strategy([t | t^ | x, icn U cn | Part] < A , v > x | S, A authorize-destroy-of x) /\
                         None := (searchAuthDestroy A x S) /\  *** check that A has not already authorized to destroy x
-                        (searchLock A S) == false .
+                        (isUnlocked A S) .
 
     crl [Dep-Destroy] : [t | t^ | icn U cn | Part] < A , v > x | A [ x |># ] | S => { Someone destroy x } [t | t^ | icn U cn | Part] S 
                     if  strategy([t | t^ | icn U cn | Part] < A , v > x | A [ x |># ] | S, Someone destroy x) .
@@ -132,14 +132,14 @@ mod BITML-SEM is
                         S''' |= predicate p .
 
     crl [C-AuthRev] : [t | t^ | icn U cn | Part] {A : a # N} | S => { A reveal a } [t | t^ | icn U cn | Part] (A : a # N | S) 
-                    if (searchLock A S) == false .
+                    if (isUnlocked A S) .
 
     crl [C-Withdraw] : [t | t^ | icn U cn | Part] < withdraw A + C, v > y | S => { Someone do withdraw A v from y } [t | t^ | icn U cn, z | Part] (< A, v > z | S)
                     if  strategy([t | t^ | icn U cn | Part] < withdraw A + C, v > y | S, Someone do withdraw A v from y) /\
                         z := fresh(cn) .
 
     crl [C-AuthControl] : [t | t^ | icn U cn | Part] < (A, A^) : D + C, v > y | S => { A authorize D in y } [t | t^ | icn U cn | Part] (< (A, A^) : D + C, v > y | A [ y |> (A, A^) : D ] | S)
-                    if  (searchLock A S) == false /\
+                    if  (isUnlocked A S) /\
                         None := (searchAuth A ((A, A^) : D) y S) .  *** check that branch D is not already authorized by A
 
     crl [C-Control1] : [t | t^ | icn U cn | Part] < A^ : after t' : D + C, v > y | S => {l'} [t | t^ | icn U cn' | Part] S'
@@ -161,8 +161,9 @@ mod BITML-SEM is
     crl [Delay] : [t | t^ | icn U cn | Part] S => {delta (sd(t',t))} [t' | t'^ | icn U cn | Part] S 
                     if t^ =/= nil /\ t' := head(t^) /\ t'^ := tail(t^) .
 
-    crl [C-Lock] : [t | t^ | icn U cn | Part] S => {Someone lock} [t | t^ | icn U cn | Part] lock(Someone) | S  
-                    if (searchLock Someone S) == false .
+    crl [C-Lock] : [t | t^ | icn U cn | Part] {A : a # N} | S => {A lock} [t | t^ | icn U cn | Part] lock(A) | S  
+                    if (isUnlocked A S) /\
+                    strategy([t | t^ | icn U cn | Part] S, A lock) .
 
 endm
 

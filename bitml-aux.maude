@@ -271,9 +271,9 @@ fmod BITML-AUX is
         eq searchAuthDestroy A x (A [ x |># ] | S) = Some ((A [ x |># ]) S) .
         eq searchAuthDestroy A x S = None [owise] .
 
-        op searchLock__ : Participant Configuration -> Bool .
-        eq searchLock A (lock(A) | S) = true .
-        eq searchLock A S = false [owise] .
+        op isUnlocked__ : Participant Configuration -> Bool .
+        eq isUnlocked A (lock(A) | S) = false .
+        eq isUnlocked A S = true [owise] .
 
 
     ***
