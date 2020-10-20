@@ -196,7 +196,3 @@ endsm
     ***reduce in Examples-LIQUIDITY-CHECK : modelCheck(TCconf(TC), <> contract-free, 'bitml) .     *** true
     ***reduce in Examples-LIQUIDITY-CHECK : modelCheck(TCconf(TC'), <> contract-free, 'bitml) .    *** false
     ***reduce in Examples-LIQUIDITY-CHECK : modelCheck(TCconf(TC''), <> contract-free, 'bitml) .   *** true
-
-*** testing the lock functions
-reduce  isUnlocked A lock(A) .
-reduce  isUnlocked A A : a # 1 .

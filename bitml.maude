@@ -161,7 +161,7 @@ mod BITML-SEM is
     crl [Delay] : [t | t^ | icn U cn | Part] S => {delta (sd(t',t))} [t' | t'^ | icn U cn | Part] S 
                     if t^ =/= nil /\ t' := head(t^) /\ t'^ := tail(t^) .
 
-    crl [C-Lock] : [t | t^ | icn U cn | Part] {A : a # N} | S => {A lock} [t | t^ | icn U cn | Part] lock(A) | S  
+    crl [C-Lock] : [t | t^ | icn U cn | (A, Part)] S => {A lock} [t | t^ | icn U cn | Part] lock(A) | S  
                     if (isUnlocked A S) /\
                     strategy([t | t^ | icn U cn | Part] S, A lock) .
 
