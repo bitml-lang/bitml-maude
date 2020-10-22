@@ -65,7 +65,7 @@ mod BITML-SEM is
     op _ do withdraw _ _ from _ : Participant Participant Value Name -> Label [ctor frozen] .
     op _authorize_in_ : Participant Contract Name -> Label [ctor frozen] .
     op _lock_in_ : Participant Contract Name -> Label [ctor frozen] .
-    op lockL : -> Label [ctor frozen] .
+    op lockL : -> Label [ctor] .
 
 
     op delta_ : Nat -> Label [ctor frozen] .
