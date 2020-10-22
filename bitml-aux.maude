@@ -279,6 +279,10 @@ fmod BITML-AUX is
         eq isHonest A (honest(A) | S) = true .
         eq isHonest A S = false [owise] .
 
+        op isDishonest__ : Participant Configuration -> Bool .
+        eq isDishonest A (honest(A) | S) = false .
+        eq isDishonest A S = true [owise] .
+
 
     ***
     *** Return a ordered set of absolute times

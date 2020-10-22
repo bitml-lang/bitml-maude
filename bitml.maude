@@ -115,7 +115,7 @@ mod BITML-SEM is
     crl [Dep-AuthDestroy] : [t | t^ | x, icn U cn | Part] < A , v > x | S => { A authorize-destroy-of x } [t | t^ | x, icn U cn | Part] < A , v > x | A [ x |># ] | S
                     if  strategy([t | t^ | x, icn U cn | Part] < A , v > x | S, A authorize-destroy-of x) /\
                         None := (searchAuthDestroy A x S) /\  *** check that A has not already authorized to destroy x
-                        (isUnlocked S) .
+                        (isUnlocked S) /\ (isDishonest A S) .
 
     crl [Dep-AuthDestroyHon] : [t | t^ | x, icn U cn | Part] < A , v > x | honest(A) | S => { A authorize-destroy-of x } [t | t^ | x, icn U cn | Part] < A , v > x | A [ x |># ] | S
                 if  strategy([t | t^ | x, icn U cn | Part] < A , v > x | S, A authorize-destroy-of x) /\
@@ -136,7 +136,7 @@ mod BITML-SEM is
                         S''' |= predicate p .
 
     crl [C-AuthRev] : [t | t^ | icn U cn | Part] {A : a # N} | S => { A reveal a } [t | t^ | icn U cn | Part] (A : a # N | S) 
-                    if (isUnlocked S) .
+                    if (isUnlocked S) /\ (isDishonest A S) .
 
     crl [C-AuthRevHon] : [t | t^ | icn U cn | Part] {A : a # N} | honest(A) | S => { A reveal a } [t | t^ | icn U cn | Part] (A : a # N | S) 
                     if true .
@@ -147,6 +147,7 @@ mod BITML-SEM is
 
     crl [C-AuthControl] : [t | t^ | icn U cn | Part] < (A, A^) : D + C, v > y | S => { A authorize D in y } [t | t^ | icn U cn | Part] (< (A, A^) : D + C, v > y | A [ y |> (A, A^) : D ] | S)
                     if  (isUnlocked S) /\
+                        (isDishonest A S) /\
                         None := (searchAuth A ((A, A^) : D) y S) .  *** check that branch D is not already authorized by A
 
     crl [C-AuthControlHon] : [t | t^ | icn U cn | Part] < (A, A^) : D + C, v > y | honest(A) | S => { A authorize D in y } [t | t^ | icn U cn | Part] (< (A, A^) : D + C, v > y | A [ y |> (A, A^) : D ] | S)
