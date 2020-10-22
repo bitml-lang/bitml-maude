@@ -28,6 +28,8 @@ fmod BITML-SORTS is
     protecting QID .
 
     sort Participant .      *** A B
+    sort HonestPar .
+    subsort HonestPar < Participant .
     sort Value .            *** v v'
     sort Name .             *** x x' y y'
     sort Secret .           *** s s'
@@ -71,8 +73,9 @@ fmod BITML-SORTS is
     sort Auth .                 *** A[chi] 
     sort ConfSec .              *** {A:a#N}
     sort ConfRev .              *** A:a#N
-    sort Lock .                 *** lock(A)
-    subsorts ActContract Deposit Auth ConfSec ConfRev Lock < Configuration .
+    sort Lock .                 
+    sort Honest .                 
+    subsorts ActContract Deposit Auth ConfSec ConfRev Lock Honest < Configuration .
 
     ***
     *** Authorization
@@ -170,7 +173,8 @@ fmod BITML-SYNTAX-CONS is
     *** Configurations
     ***
     op 0 : -> Configuration [ctor] .                                                                            *** [conf.id]
-    op lock(_) : Participant -> Lock [ctor prec 15 frozen] .                                            
+    op honest(_) : Participant -> Honest [ctor prec 15 frozen] .         
+    op lock : -> Lock [ctor] .                                                                                                                        
     op __ : AnonContract Name -> ActContract [ctor prec 15 frozen format (d s d)] .                             *** [conf.active-contract]
     op __ : AnonDeposit Name -> Deposit [ctor prec 15 frozen format (d s d)] .                                  *** [conf.deposit]
     op _[_] : Participant AuthAction -> Auth [ctor prec 35 frozen] .                                            *** [conf.authorization]

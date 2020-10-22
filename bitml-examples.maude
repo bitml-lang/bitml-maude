@@ -120,7 +120,8 @@ mod Examples-LIQUIDITY is
             2 satoshi ~> WIN:Contract
             ), 6 satoshi > 'x
         | { A : a # N } 
-        | { B : b # M } .
+        | { B : b # M } 
+        | honest(A) .
 
     eq WIN = reveal (a, b) if size(a) == size(b) . withdraw A
            + reveal (a, b) if size(a) != size(b) . withdraw B .
@@ -152,9 +153,6 @@ mod Examples-LIQUIDITY is
         + after t : withdraw B .
 
     *** strategies
-
-    eq strategy(S:SemConfiguration, A lock) = false .
-
 
     *** A never locks her secrets
     ***eq strategy(S:SemConfiguration, A lock-reveal a:Secret) = false .
