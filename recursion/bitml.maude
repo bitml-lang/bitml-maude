@@ -61,10 +61,6 @@ op isExpanded__ : ContractName Configuration -> Bool .
 eq isExpanded X (X | G) = true .
 eq isExpanded X G = false [owise] .
 
-***op transform_ : SplitParallel -> ContractConfiguration .
-***eq transform (C ; SP) = < C > | transform SP .
-***eq transform C = < C > . 
-
 var tail : List{Contract} .
 op ||_ : List{Contract} -> ContractConfiguration [memo] .
 eq || (C nil) = < C > .
