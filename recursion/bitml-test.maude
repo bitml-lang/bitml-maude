@@ -4,19 +4,19 @@ mod TEST is
 ops A B C : -> Participant .
 ops X Y Z : -> ContractName .
 ops Contr Contr1 Contr2 Contr3 : -> Configuration .
-ops test : -> Contract .
+***ops test : -> Contract .
 
 
 ***eq dec = (X := wd A), (Y := wd B) .   
-eq dec = (X := *: rngt X ), (Y := wd B) .   
+eq dec = (X := (rngt X) + (wd C)), (Y := wd B) .   
 
 
 eq Contr = < tau. wd A  + (wd B)> | unlock .
 eq Contr1 = < split( (wd A)  (wd B)) > | unlock .
 eq Contr2 = < *: tau. wd A >  | unlock .
-eq Contr3 = < rngt X + (wd A)> | unlock .
+eq Contr3 = < rngt X + (wd B)> | unlock .
 
-eq test = (wd A) (wd B) .
+***eq test = (wd A) (wd B) .
 
 endm
 
@@ -25,21 +25,22 @@ endm
 ***rew Contr2 .
 rew Contr3 .
 
-***search Contr3 | unlock =>! G:Configuration .
+search Contr3  =>! G:Configuration .
 
 
-***search Contr | unlock =>* G:Configuration .
+***search Contr  =>* G:Configuration .
 *** red (||  test) .
 ***red dec . 
 ***red ref X dec .
 ***red isDeclared X dec .
 ***red isDeclared Z dec .
 
-***red isExpanded X  Contr | unlock | X .
+***red isExpanded X  Contr | X .
 
 smod Examples-LIQUIDITY-CHECK is
     protecting BITML_CHECK .
     including TEST .
 endsm
 
-***reduce in Examples-LIQUIDITY-CHECK : modelCheck(Contr3 , <> contract-free, 'bitml) .           *** false
+reduce in Examples-LIQUIDITY-CHECK : modelCheck(Contr1 , <> contract-free) .           *** true
+reduce in Examples-LIQUIDITY-CHECK : modelCheck(Contr3 , <> contract-free) .           *** CHECK! seems wrong
