@@ -1,33 +1,31 @@
-load bitml.maude
-
 mod TEST is
-	protecting BITML_SEM .
+	protecting BITML .
 
 ops A B C : -> Participant .
 ops X Y Z : -> ContractName .
-ops Contr Contr1 Contr2 Contr3 : -> ContractConfiguration .
+ops Contr Contr1 Contr2 Contr3 : -> Configuration .
 ops test : -> Contract .
 
 
 ***eq dec = (X := wd A), (Y := wd B) .   
-eq dec = (X := (wd A) + rngt X ), (Y := wd B) .   
+eq dec = (X := *: rngt X ), (Y := wd B) .   
 
 
-eq Contr = < tau. wd A  + (wd B)> .
-eq Contr1 = < split( (wd A)  (wd B)) > .
-eq Contr2 = < *: tau. wd A >  .
-eq Contr3 = < rngt X + (wd A)> .
+eq Contr = < tau. wd A  + (wd B)> | unlock .
+eq Contr1 = < split( (wd A)  (wd B)) > | unlock .
+eq Contr2 = < *: tau. wd A >  | unlock .
+eq Contr3 = < rngt X + (wd A)> | unlock .
 
 eq test = (wd A) (wd B) .
 
 endm
 
-***rew Contr | unlock  .
-***rew Contr1 | unlock  .
-***rew Contr2 | unlock  .
-rew Contr3 | unlock  .
+***rew Contr .
+***rew Contr1 .
+***rew Contr2 .
+rew Contr3 .
 
-search Contr3 | unlock =>* G:Configuration .
+***search Contr3 | unlock =>! G:Configuration .
 
 
 ***search Contr | unlock =>* G:Configuration .
@@ -38,3 +36,10 @@ search Contr3 | unlock =>* G:Configuration .
 ***red isDeclared Z dec .
 
 ***red isExpanded X  Contr | unlock | X .
+
+smod Examples-LIQUIDITY-CHECK is
+    protecting BITML_CHECK .
+    including TEST .
+endsm
+
+***reduce in Examples-LIQUIDITY-CHECK : modelCheck(Contr3 , <> contract-free, 'bitml) .           *** false

@@ -72,7 +72,7 @@ eq || (C tail)  = < C >  | ||(tail) .
 
 endfm
 
-mod BITML_SEM is
+mod BITML is
 	protecting BITML_SYNTAX .
 
 vars A B : Participant .
@@ -98,3 +98,25 @@ crl unlock | < rngt X + Contr > | G => unlock | < (ref X dec) > | G | X
 eq X | X = X .
 
 endm
+
+mod BITML_PREDS is
+    protecting BITML .    
+    including SATISFACTION .
+    including LTL-SIMPLIFIER .
+
+    subsort Configuration < State .
+
+    op contract-free : -> Prop .
+
+    var CConf : ContractConfiguration .
+    var G : Configuration .
+
+    eq ( CConf | G ) |= contract-free = false .
+    eq G |= contract-free = true [owise] .
+
+endm
+
+smod BITML_CHECK is
+    protecting BITML_PREDS .
+    including MODEL-CHECKER .
+endsm
