@@ -1,28 +1,39 @@
 fmod BITML_SORTS is 
 
-sort Contract .
 sort Participant .
 
+sort Contract .
+
 sort ContractName .
+
 sort Declaration .
 sort Declarations .
 subsort Declaration < Declarations .
 
 sort Configuration .
-subsorts Contract ContractName < Configuration .
+sort ContractConfiguration .
+subsorts ContractName ContractConfiguration < Configuration .
+
 endfm
+
+view Contract from TRIV to BITML_SORTS is
+    sort Elt to Contract .
+endv
 
 fmod BITML_SYNTAX is
 	protecting BITML_SORTS .
 	protecting EXT-BOOL .
+	protecting LIST{Contract} .
 
 op 0 : -> Contract [ctor] .                                                                                    
-op _+_ : Contract Contract -> Contract [comm assoc ctor id: 0 frozen format (d d d d)] .                     
+op _+_ : Contract Contract -> Contract [comm assoc ctor id: 0 frozen] .                     
 op wd_ : Participant -> Contract [ctor prec 25 frozen] .    
 op tau._ : Contract -> Contract [ctor prec 25 frozen] .    
 op *:_ : Contract -> Contract [ctor prec 25 frozen] .    
 op rngt_ : ContractName -> Contract [ctor prec 25 frozen] .    
-op split(_) : Configuration -> Contract [ctor prec 25 frozen format (d d ++i n--i d)] .       
+op split(_) : List{Contract} -> Contract [ctor prec 25 frozen] .       
+
+op <_> : Contract -> ContractConfiguration [ctor prec 25 frozen] .
 
 op 0 : -> Configuration [ctor] .
 op lock : -> Configuration [ctor] .  
@@ -50,6 +61,15 @@ op isExpanded__ : ContractName Configuration -> Bool .
 eq isExpanded X (X | G) = true .
 eq isExpanded X G = false [owise] .
 
+***op transform_ : SplitParallel -> ContractConfiguration .
+***eq transform (C ; SP) = < C > | transform SP .
+***eq transform C = < C > . 
+
+var tail : List{Contract} .
+op ||_ : List{Contract} -> ContractConfiguration [memo] .
+eq || (C nil) = < C > .
+eq || (C tail)  = < C >  | ||(tail) .
+
 endfm
 
 mod BITML_SEM is
@@ -59,18 +79,20 @@ vars A B : Participant .
 vars X Y Z : ContractName .
 vars G G' : Configuration .
 vars Contr Contr' Contr'' : Contract .
+var splitEntries : List{Contract} .
+
 
 rl unlock | G => lock | G .
 
-rl (wd A) + Contr | G => G .
+rl < (wd A) + Contr > | G => G .
 
-rl (tau. Contr') + Contr | G => Contr' | G .
+rl < (tau. Contr') + Contr > | G => < Contr' > | G .
 
-rl unlock | (*: Contr') + Contr | G => unlock | Contr' | G .
+rl unlock | < (*: Contr') + Contr > | G => unlock | < Contr' > | G .
 
-rl split(G') + Contr | G => G' | G .
+rl < split(splitEntries) + Contr > | G => (|| splitEntries) | G .
 
-crl unlock | rngt X + Contr | G => unlock | (ref X dec) | G 
+crl unlock | < rngt X + Contr > | G => unlock | < (ref X dec) > | G | X
 	if (isDeclared X dec)  /\ (isExpanded X G) = false .
 
 endm
@@ -80,19 +102,33 @@ mod TEST is
 
 ops A B C : -> Participant .
 ops X Y Z : -> ContractName .
-ops Contr Contr1 : -> ContractName .
+ops Contr Contr1 Contr2 Contr3 : -> ContractConfiguration .
+ops test : -> Contract .
 
 
 eq dec = (X := wd A), (Y := wd B) .   
+***eq dec = (X := (wd A) + rngt X ), (Y := wd B) .   
 
-eq Contr = tau. wd A .
+
+eq Contr = < tau. wd A  + (wd B)> .
+eq Contr1 = < split( (wd A)  (wd B)) > .
+eq Contr2 = < *: tau. wd A >  .
+eq Contr3 = < rngt X > .
+
+eq test = (wd A) (wd B) .
 
 endm
 
-rew Contr | unlock .
+rew Contr | unlock  .
+rew Contr1 | unlock  .
+rew Contr2 | unlock  .
+rew Contr3 | unlock  .
 
-search Contr | unlock =>* G:Configuration .
+search Contr3 | unlock =>* G:Configuration .
 
+
+***search Contr | unlock =>* G:Configuration .
+*** red (||  test) .
 ***red dec . 
 ***red ref X dec .
 ***red isDeclared X dec .
