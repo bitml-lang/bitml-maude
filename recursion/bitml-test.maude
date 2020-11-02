@@ -3,12 +3,12 @@ mod TEST is
 
 ops A B C : -> Participant .
 ops X Y Z : -> ContractName .
-ops Contr Contr1 Contr2 Contr3 : -> Configuration .
+ops Contr Contr1 Contr2 Contr3 Contr4 : -> Configuration .
 ***ops test : -> Contract .
 
 
 ***eq dec = (X := wd A), (Y := wd B) .   
-eq dec = (X := (rngt X) + (wd C)), (Y := wd B) .   
+eq dec = (X := (rngt X) + (wd C)), (Y := (rngt Y)) .   
 
 
 eq Contr = < tau. wd A  + (wd B)> | unlock .
@@ -16,7 +16,8 @@ eq Contr1 = < split( (wd A)  (wd B)) > | unlock .
 eq Contr2 = < *: tau. wd A >  | unlock .
 eq Contr3 = < rngt X + (wd B)> | unlock .
 
-***eq test = (wd A) (wd B) .
+eq Contr4 = unlock | < wd C + rngt Y > .
+
 
 endm
 
@@ -37,10 +38,15 @@ search Contr3  =>! G:Configuration .
 
 ***red isExpanded X  Contr | X .
 
-smod Examples-LIQUIDITY-CHECK is
+smod LIQUIDITY-CHECK is
     protecting BITML_CHECK .
     including TEST .
 endsm
 
-reduce in Examples-LIQUIDITY-CHECK : modelCheck(Contr1 , <> contract-free) .           *** true
-reduce in Examples-LIQUIDITY-CHECK : modelCheck(Contr3 , <> contract-free) .           *** CHECK! seems wrong
+reduce in LIQUIDITY-CHECK : modelCheck(Contr1 , <> contract-free) .           *** true
+reduce in LIQUIDITY-CHECK : modelCheck(Contr3 , <> contract-free) .           *** SHOULD BE true, it's looping over rule rngt 
+reduce in LIQUIDITY-CHECK : modelCheck(Contr4 , <> contract-free) .           *** false
+
+
+
+search Contr3  =>* G:Configuration .

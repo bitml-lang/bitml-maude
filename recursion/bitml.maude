@@ -78,17 +78,17 @@ vars Contr Contr' Contr'' : Contract .
 var splitEntries : List{Contract} .
 
 
-rl unlock | G => lock | G .
+rl [lock] : unlock | G => lock | G .
 
-rl < (wd A) + Contr > | G => G .
+rl [withdraw] : < (wd A) + Contr > | G => G .
 
-rl < (tau. Contr') + Contr > | G => < Contr' > | G .
+rl [tau] : < (tau. Contr') + Contr > | G => < Contr' > | G .
 
-rl unlock | < (*: Contr') + Contr > | G => unlock | < Contr' > | G .
+rl [star] : unlock | < (*: Contr') + Contr > | G => unlock | < Contr' > | G .
 
-rl < split(splitEntries) + Contr > | G => (|| splitEntries) | G .
+rl [split] : < split(splitEntries) + Contr > | G => (|| splitEntries) | G .
 
-crl unlock | < rngt X + Contr > | G => unlock | < (ref X dec) > | G | X
+crl [rngt] : unlock | < rngt X + Contr > | G => unlock | < (ref X dec) > | G | X
 	if (isDeclared X dec)  /\ (isExpanded X G) = false .
 
 eq X | X = X .
@@ -98,7 +98,6 @@ endm
 mod BITML_PREDS is
     protecting BITML .    
     including SATISFACTION .
-    including LTL-SIMPLIFIER .
 
     subsort Configuration < State .
 
