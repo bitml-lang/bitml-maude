@@ -75,9 +75,25 @@ crl unlock | rngt X + Contr | G => unlock | (ref X dec) | G
 
 endm
 
-***ops A B C : -> Participant .
-***ops X Y Z : -> ContractName .
+mod TEST is
+	protecting BITML_SEM .
 
-***eq dec = (X := wd A), (Y := wd B) .   
+ops A B C : -> Participant .
+ops X Y Z : -> ContractName .
+ops Contr Contr1 : -> ContractName .
+
+
+eq dec = (X := wd A), (Y := wd B) .   
+
+eq Contr = tau. wd A .
+
+endm
+
+rew Contr | unlock .
+
+search Contr | unlock =>* G:Configuration .
+
 ***red dec . 
 ***red ref X dec .
+***red isDeclared X dec .
+***red isDeclared Z dec .
