@@ -1,0 +1,83 @@
+fmod BITML_SORTS is 
+
+sort Contract .
+sort Participant .
+
+sort ContractName .
+sort Declaration .
+sort Declarations .
+subsort Declaration < Declarations .
+
+sort Configuration .
+subsorts Contract ContractName < Configuration .
+endfm
+
+fmod BITML_SYNTAX is
+	protecting BITML_SORTS .
+	protecting EXT-BOOL .
+
+op 0 : -> Contract [ctor] .                                                                                    
+op _+_ : Contract Contract -> Contract [comm assoc ctor id: 0 frozen format (d d d d)] .                     
+op wd_ : Participant -> Contract [ctor prec 25 frozen] .    
+op tau._ : Contract -> Contract [ctor prec 25 frozen] .    
+op *:_ : Contract -> Contract [ctor prec 25 frozen] .    
+op rngt_ : ContractName -> Contract [ctor prec 25 frozen] .    
+op split(_) : Configuration -> Contract [ctor prec 25 frozen format (d d ++i n--i d)] .       
+
+op 0 : -> Configuration [ctor] .
+op lock : -> Configuration [ctor] .  
+op unlock : -> Configuration [ctor] .                                                                                                                     
+op _|_ : Configuration Configuration -> Configuration [comm assoc ctor id: 0 frozen] .    
+
+op 0 : -> Declarations [ctor] .
+op _:=_ : ContractName Contract -> Declaration [ctor] .
+op _,_ : Declarations Declarations -> Declarations [comm assoc ctor id: 0 frozen] .    
+op dec : -> Declarations [ctor] .         
+
+var X : ContractName .
+var C : Contract .
+var D : Declarations .
+var G : Configuration .
+
+op ref__ : ContractName Declarations -> Contract .
+eq ref X ((X := C), D) = C .
+
+op isDeclared__ : ContractName Declarations -> Bool .
+eq isDeclared X ((X := C), D) = true .
+eq isDeclared X D = false [owise] .
+
+op isExpanded__ : ContractName Configuration -> Bool .
+eq isExpanded X (X | G) = true .
+eq isExpanded X G = false [owise] .
+
+endfm
+
+mod BITML_SEM is
+	protecting BITML_SYNTAX .
+
+vars A B : Participant .
+vars X Y Z : ContractName .
+vars G G' : Configuration .
+vars Contr Contr' Contr'' : Contract .
+
+rl unlock | G => lock | G .
+
+rl (wd A) + Contr | G => G .
+
+rl (tau. Contr') + Contr | G => Contr' | G .
+
+rl unlock | (*: Contr') + Contr | G => unlock | Contr' | G .
+
+rl split(G') + Contr | G => G' | G .
+
+crl unlock | rngt X + Contr | G => unlock | (ref X dec) | G 
+	if (isDeclared X dec)  /\ (isExpanded X G) = false .
+
+endm
+
+***ops A B C : -> Participant .
+***ops X Y Z : -> ContractName .
+
+***eq dec = (X := wd A), (Y := wd B) .   
+***red dec . 
+***red ref X dec .
