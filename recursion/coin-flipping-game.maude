@@ -1,0 +1,32 @@
+mod TEST is
+	protecting BITML .
+
+ops A B : -> Participant .
+ops Xa Xb : -> ContractName .
+ops CFG SplitA SplitB : -> Contract .
+ops Cconf : -> Configuration .
+
+
+eq dec = (Xa := *: (*: (wd A) + *: (rngt Xb + SplitB) + (wd B)) + (wd A)), 
+		 (Xb := *: (*: (rngt Xa + SplitA) + *: (wd B) + (wd B)) + (wd A)) .   
+
+eq SplitA = split((wd A) (wd B)) .
+eq SplitB = split((wd A) (wd B)) .
+
+eq CFG = *: (*: (rngt Xa + SplitA) + *: (rngt Xb + SplitB) + (wd B)) + (wd A) .
+
+eq Cconf = < CFG > | unlock | Xa | Xb .
+
+
+endm
+
+
+***search Contr3  =>* G:Configuration .
+
+
+smod LIQUIDITY-CHECK is
+    protecting BITML_CHECK .
+    including TEST .
+endsm
+
+reduce in LIQUIDITY-CHECK : modelCheck(Cconf , <> contract-free) .           *** true

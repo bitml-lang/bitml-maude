@@ -39,9 +39,6 @@ op 0 : -> Configuration [ctor] .
 op lock : -> Configuration [ctor] .  
 op unlock : -> Configuration [ctor] .                                                                                                                     
 op _|_ : Configuration Configuration -> Configuration [comm assoc ctor id: 0 frozen] .    
-op coso : -> Configuration [ctor] .  
-op coso2 : -> Configuration [ctor] .  
-
 
 op 0 : -> Declarations [ctor] .
 op _:=_ : ContractName Contract -> Declaration [ctor] .
