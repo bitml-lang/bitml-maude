@@ -14,9 +14,9 @@ eq dec = (X := (rngt X) + (wd C)), (Y := (rngt Y)) .
 eq Contr = < tau. wd A  + (wd B)> | unlock .
 eq Contr1 = < split( (wd A)  (wd B)) > | unlock .
 eq Contr2 = < *: tau. wd A >  | unlock .
-eq Contr3 = < rngt X + (wd B)> | unlock .
+eq Contr3 = < rngt X + (wd B)> | unlock | X .
 
-eq Contr4 = unlock | < wd C + rngt Y > .
+eq Contr4 = unlock | < wd C + rngt Y > | Y .
 
 
 endm
@@ -24,9 +24,9 @@ endm
 ***rew Contr .
 ***rew Contr1 .
 ***rew Contr2 .
-rew Contr3 .
+***rew Contr3 .
 
-search Contr3  =>! G:Configuration .
+search Contr3  =>* G:Configuration .
 
 
 ***search Contr  =>* G:Configuration .
@@ -36,7 +36,8 @@ search Contr3  =>! G:Configuration .
 ***red isDeclared X dec .
 ***red isDeclared Z dec .
 
-***red isExpanded X  Contr | X .
+***red isExpanded X  Contr3 | X.
+***red isExpanded X  Contr3  .
 
 smod LIQUIDITY-CHECK is
     protecting BITML_CHECK .
@@ -44,9 +45,9 @@ smod LIQUIDITY-CHECK is
 endsm
 
 reduce in LIQUIDITY-CHECK : modelCheck(Contr1 , <> contract-free) .           *** true
-reduce in LIQUIDITY-CHECK : modelCheck(Contr3 , <> contract-free) .           *** SHOULD BE true, it's looping over rule rngt 
+reduce in LIQUIDITY-CHECK : modelCheck(Contr3 , <> contract-free) .           *** true
 reduce in LIQUIDITY-CHECK : modelCheck(Contr4 , <> contract-free) .           *** false
 
 
 
-search Contr3  =>* G:Configuration .
+***search Contr3  =>* G:Configuration .
