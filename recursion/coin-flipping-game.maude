@@ -30,3 +30,5 @@ smod LIQUIDITY-CHECK is
 endsm
 
 reduce in LIQUIDITY-CHECK : modelCheck(Cconf , <> contract-free) .           *** true
+
+quit .

@@ -51,3 +51,5 @@ reduce in LIQUIDITY-CHECK : modelCheck(Contr4 , <> contract-free) .           **
 
 
 ***search Contr3  =>* G:Configuration .
+
+quit .
